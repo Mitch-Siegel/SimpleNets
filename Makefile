@@ -14,3 +14,6 @@ nn: $(OBJS)
 
 test:
 	$(info OBJS="$(OBJS)")
+
+clean:
+	rm *.o

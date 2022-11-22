@@ -2,52 +2,60 @@
 
 typedef float nn_num_t;
 
+class Layer;
+
+class NeuronLayer;
+
 class Unit
 {
+    friend class Layer;
+
 protected:
     std::vector<nn_num_t> connectionWeights;
-    nn_num_t value;
+    nn_num_t value_ = 0.0;
 
 public:
     nn_num_t delta;
 
-    virtual nn_num_t output() = 0;
+    nn_num_t output() { return value_; };
 
-    void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] += (this->connectionWeights[index] * delta); };
+    virtual void recalculate() = 0;
 
-    virtual void backpropagate(nn_num_t error, nn_num_t alpha) = 0;
+    void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] -= delta; };
+
+    nn_num_t operator[](int index) { return connectionWeights[index]; };
+
+    const std::vector<nn_num_t> &GetConnectionWeights() { return this->connectionWeights; };
+
+    void addConnection(nn_num_t weight) { this->connectionWeights.push_back(weight); };
 };
 
 class Input : public Unit
 {
 public:
-    Input() { value = 0.0; };
-    nn_num_t output() { return this->value; }
-    void setValue(nn_num_t newValue) { this->value = newValue; };
+    Input() { value_ = 0.0; };
+    void recalculate(){};
+    void setValue(nn_num_t newValue) { this->value_ = newValue; };
 
     void backpropagate(nn_num_t error, nn_num_t alpha){};
 };
-
-class Layer;
-
-class NeuronLayer;
 
 class Neuron : public Unit
 {
     friend class Layer;
 
 private:
-    bool needRecompute;
-
     Layer *inputLayer;
 
     virtual nn_num_t activation(nn_num_t) = 0;
+
+    void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] += (this->connectionWeights[index] * delta); };
 
 public:
     Neuron();
     Neuron(Layer *inputLayer);
 
-    nn_num_t output();
+    void recalculate();
 
     void backpropagate(nn_num_t error, nn_num_t alpha);
 };
@@ -66,8 +74,8 @@ public:
 class BiasNeuron : public Unit
 {
 public:
-    BiasNeuron() : Unit(){};
-    nn_num_t output() { return 1.0; }
+    BiasNeuron() : Unit() { value_ = 1.0; };
+    void recalculate(){};
     void backpropagate(nn_num_t error, nn_num_t alpha){};
 };
 
@@ -93,9 +101,11 @@ public:
 
     std::size_t index() { return this->index_; };
 
-    void BackPropagate(nn_num_t error, nn_num_t alpha){};
+    void BackPropagate(nn_num_t error){};
 
-    void StartBackProp();
+    std::vector<Unit *>::iterator begin() { return this->units.begin(); };
+
+    std::vector<Unit *>::iterator end() { return this->units.end(); };
 };
 
 class NeuronLayer : public Layer
@@ -147,7 +157,11 @@ public:
 
     nn_num_t Output();
 
-    void BackPropagate(nn_num_t expectedOutput, nn_num_t alpha);
+    void BackPropagate(nn_num_t expectedOutput);
+
+    void UpdateWeights(nn_num_t learningRate);
 
     void dump();
+
+    void setInput(nn_num_t value);
 };
