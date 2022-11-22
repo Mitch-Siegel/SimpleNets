@@ -16,12 +16,13 @@ protected:
 
 public:
     nn_num_t delta;
+    nn_num_t error;
 
     nn_num_t output() { return value_; };
 
     virtual void recalculate() = 0;
 
-    void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] -= delta; };
+    void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] += delta; };
 
     nn_num_t operator[](int index) { return connectionWeights[index]; };
 
@@ -164,4 +165,6 @@ public:
     void dump();
 
     void setInput(nn_num_t value);
+
+    void ForwardPropagate();
 };

@@ -99,22 +99,17 @@ void NeuralNet::AddLayer(int size, enum neuronTypes t)
 
 void NeuralNet::AddOutputLayer(int size, enum neuronTypes t)
 {
-    // this->layers.push_back(new OutputLayer(this));
-    // for (int i = 0; i < size; i++)
-    // {
-    // switch (t)
-    // {
-    // case perceptron:
-    // this->layers.back()->AddUnit(new Perceptron());
-    // break;
-    // }
-    // }
-    // switch (t)
-    // {
-    // case perceptron:
-    this->AddLayer(size, t);
-    // break;
-    // }
+    OutputLayer *ol = new OutputLayer(this);
+    for (int i = 0; i < size; i++)
+    {
+        switch (t)
+        {
+        case perceptron:
+            ol->AddUnit(new Perceptron(this->layers.back()));
+            break;
+        }
+    }
+    this->layers.push_back(ol);
 }
 
 void NeuralNet::ConfigureOutput(enum outputTypes t, enum neuronTypes nt)
@@ -188,8 +183,31 @@ void NeuralNet::BackPropagate(nn_num_t expectedOutput)
     for (size_t i = this->layers.size(); i > 0;)
     {
         --i;
+        printf("backprop layer %lu\n", i);
         Layer *layer = this->layers[i];
-        std::vector<nn_num_t> errors;
+
+        for (size_t j = 0; j < layer->size(); j++)
+        {
+            Unit *from = layer->operator[](j);
+            nn_num_t error = 0.0;
+            if (i < this->layers.size() - 1)
+            {
+                for (auto to = this->layers[i + 1]->begin(); to != this->layers[i + 1]->end(); ++to)
+                {
+                    error += (*to)->GetConnectionWeights()[j] * (*to)->delta;
+                }
+                // from->delta = error * (from->output() * (1.0 - from->output()));
+            }
+            else
+            {
+                error = expectedOutput - from->output();
+                // from->delta = error;
+            }
+            from->error = error;
+            from->delta = error * (from->output() * (1.0 - from->output()));
+        }
+
+        /*std::vector<nn_num_t> errors;
         if (i != this->layers.size() - 1)
         {
             for (size_t j = 0; j < layer->size(); j++)
@@ -222,7 +240,7 @@ void NeuralNet::BackPropagate(nn_num_t expectedOutput)
             Unit *n = layer->operator[](j);
             printf("delta %lu,%lu is % .2f\n", layer->index(), j, errors[j] * (n->output() * (1.0 - n->output())));
             n->delta = errors[j] * (n->output() * (1.0 - n->output()));
-        }
+        }*/
     }
 
     // size_t networkSize = this->size();
@@ -258,7 +276,8 @@ void NeuralNet::UpdateWeights(nn_num_t learningRate)
     std::vector<nn_num_t> inputs;
     for (size_t i = 1; i < this->size(); i++)
     {
-        std::vector<nn_num_t> inputs;
+        inputs.clear();
+        // std::vector<nn_num_t> inputs;
         // if (i > 0)
         // {
         printf("Layer %lu: ", i);
@@ -291,7 +310,7 @@ void NeuralNet::dump()
         for (size_t j = 0; j < l->size(); j++)
         {
             Unit *u = l->operator[](j);
-            printf("Neuron %2lu: activation: % .2f, delta % .2f, weights:\n\t", j, u->output(), u->delta);
+            printf("Neuron %2lu: activation: % .2f, delta % .2f, error % .2f, weights:\n\t", j, u->output(), u->delta, u->error);
             auto cw = u->GetConnectionWeights();
             for (auto w : cw)
             {
@@ -308,4 +327,16 @@ void NeuralNet::setInput(nn_num_t value)
 {
     Input *i = static_cast<Input *>(this->layers[0]->operator[](0));
     i->setValue(value);
+}
+
+void NeuralNet::ForwardPropagate()
+{
+    for (size_t i = 1; i < this->size(); i++)
+    {
+        Layer *l = this->operator[](i);
+        for (auto u = l->begin(); u != l->end(); ++u)
+        {
+            (*u)->recalculate();
+        }
+    }
 }
