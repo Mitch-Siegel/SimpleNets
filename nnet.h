@@ -1,4 +1,5 @@
 #include <vector>
+#include <math.h>
 
 typedef float nn_num_t;
 
@@ -18,7 +19,9 @@ public:
     nn_num_t delta;
     nn_num_t error;
 
-    nn_num_t output() { return value_; };
+    nn_num_t raw() { return value_; };
+    virtual nn_num_t activation() = 0;
+    virtual nn_num_t activationDeriv() = 0;
 
     virtual void recalculate() = 0;
 
@@ -35,6 +38,8 @@ class Input : public Unit
 {
 public:
     Input() { value_ = 0.0; };
+    virtual nn_num_t activation() { return value_; };
+    virtual nn_num_t activationDeriv() { return 0.0; };
     void recalculate(){};
     void setValue(nn_num_t newValue) { this->value_ = newValue; };
 
@@ -48,34 +53,65 @@ class Neuron : public Unit
 private:
     Layer *inputLayer;
 
-    virtual nn_num_t activation(nn_num_t) = 0;
-
     void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] += (this->connectionWeights[index] * delta); };
 
 public:
-    Neuron();
-    Neuron(Layer *inputLayer);
+    Neuron()
+    {
+        this->inputLayer = nullptr;
+        this->delta = 0.0;
+    };
+    Neuron(Layer *inputLayer)
+    {
+        this->inputLayer = inputLayer;
+        this->delta = 0.0;
+    };
 
     void recalculate();
 
     void backpropagate(nn_num_t error, nn_num_t alpha);
 };
 
+class Logistic : public Neuron
+{
+public:
+    Logistic(){};
+    Logistic(Layer *inputLayer) : Neuron(inputLayer){};
+    nn_num_t activation() { return 1.0 / (1.0 + exp(-1.0 * this->value_)); };
+    nn_num_t activationDeriv()
+    {
+        nn_num_t a = this->activation();
+        return a * (1.0 - a);
+    };
+};
+
 class Perceptron : public Neuron
 {
-private:
-    nn_num_t activation(nn_num_t input);
-
 public:
-    Perceptron();
-    Perceptron(Layer *inputLayer);
-    void learn(std::vector<nn_num_t> inputs, nn_num_t output, nn_num_t alpha);
+    Perceptron(){};
+    Perceptron(Layer *inputLayer) : Neuron(inputLayer){};
+    nn_num_t activation() { return (this->value_ > 0.0) ? 1.0 : 0.0; };
+    nn_num_t activationDeriv()
+    {
+        return (this->value_ == 0.0) ? MAXFLOAT : 0.0;
+    };
+};
+
+class Linear : public Neuron
+{
+public:
+    Linear(){};
+    Linear(Layer *inputLayer) : Neuron(inputLayer){};
+    nn_num_t activation() { return this->value_; };
+    nn_num_t activationDeriv() { return 1.0; };
 };
 
 class BiasNeuron : public Unit
 {
 public:
     BiasNeuron() : Unit() { value_ = 1.0; };
+    virtual nn_num_t activation() { return value_; };
+    virtual nn_num_t activationDeriv() { return 0.0; };
     void recalculate(){};
     void backpropagate(nn_num_t error, nn_num_t alpha){};
 };
@@ -130,7 +166,9 @@ class NeuralNet
 public:
     enum neuronTypes
     {
+        logistic,
         perceptron,
+        linear,
     };
 
     enum outputTypes
