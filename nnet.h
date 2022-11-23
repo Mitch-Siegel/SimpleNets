@@ -120,6 +120,7 @@ class NeuralNet;
 class Layer
 {
     friend class NeuronLayer;
+    friend class InputLayer;
     friend class OutputLayer;
 
 private:
@@ -138,8 +139,6 @@ public:
 
     std::size_t index() { return this->index_; };
 
-    void BackPropagate(nn_num_t error){};
-
     std::vector<Unit *>::iterator begin() { return this->units.begin(); };
 
     std::vector<Unit *>::iterator end() { return this->units.end(); };
@@ -151,6 +150,14 @@ public:
     Neuron *operator[](int index) { return static_cast<Neuron *>(this->units.at(index)); };
 
     NeuronLayer(NeuralNet *myNet_) : Layer(myNet_, true){};
+};
+
+class InputLayer : public Layer
+{
+public:
+    Input *operator[](int index) { return static_cast<Input *>(this->units.at(index)); };
+
+    InputLayer(NeuralNet *myNet_) : Layer(myNet_, false){};
 };
 
 class OutputLayer : public Layer
@@ -171,15 +178,9 @@ public:
         linear,
     };
 
-    enum outputTypes
-    {
-        output_singular,
-        output_null,
-    };
-
 private:
     std::vector<Layer *> layers;
-    enum outputTypes outputType = output_null;
+    int nOutputs;
 
     void AddOutputLayer(int size, enum neuronTypes t);
 
@@ -192,17 +193,17 @@ public:
 
     void AddLayer(int size, enum neuronTypes t);
 
-    void ConfigureOutput(enum outputTypes t, enum neuronTypes nt);
+    void ConfigureOutput(int nOutputs, enum neuronTypes nt);
 
     nn_num_t Output();
 
-    void BackPropagate(nn_num_t expectedOutput);
+    void BackPropagate(std::vector<nn_num_t> expectedOutput);
 
     void UpdateWeights(nn_num_t learningRate);
 
     void dump();
 
-    void setInput(nn_num_t value);
+    void setInput(std::vector<nn_num_t> values);
 
     void ForwardPropagate();
 };
