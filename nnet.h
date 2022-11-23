@@ -90,10 +90,11 @@ class Perceptron : public Neuron
 public:
     Perceptron(){};
     Perceptron(Layer *inputLayer) : Neuron(inputLayer){};
-    nn_num_t activation() { return (this->value_ > 0.0) ? 1.0 : 0.0; };
+    nn_num_t activation() { return (this->value_ > 0) ? 1.0 : 0.0; };
     nn_num_t activationDeriv()
     {
-        return (this->value_ == 0.0) ? MAXFLOAT : 0.0;
+        nn_num_t a = 0.001 / (0.001 + exp(-100.0 * this->value_));
+        return a * (1.0 - a);
     };
 };
 
