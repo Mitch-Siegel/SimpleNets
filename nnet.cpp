@@ -55,27 +55,60 @@ NeuralNet::NeuralNet(int nInputs)
     }
 }
 
-void NeuralNet::AddLayer(int size, enum neuronTypes t)
+void NeuralNet::AddLayer(size_t size, enum neuronTypes t)
 {
-    NeuronLayer *newLayer = new NeuronLayer(this);
-    for (int i = 0; i < size; i++)
+    OutputLayer *ol = nullptr;
+    if (this->nOutputs > 0)
     {
+        ol = static_cast<OutputLayer *>(this->layers.back());
+        this->layers.pop_back();
+        for (auto u = ol->begin(); u != ol->end(); ++u)
+        {
+            while ((*u)->GetConnectionWeights().size() < size + 1)
+            {
+                (*u)->addConnection(0.0);
+            }
+        }
+    }
+    NeuronLayer *newLayer = new NeuronLayer(this);
+    for (size_t i = 0; i < size; i++)
+    {
+        Unit *newU;
         switch (t)
         {
         case logistic:
-            newLayer->AddUnit(new Logistic(this->layers.back()));
+            newU = new Logistic(this->layers.back());
             break;
 
         case perceptron:
-            newLayer->AddUnit(new Perceptron(this->layers.back()));
+            newU = new Perceptron(this->layers.back());
             break;
 
         case linear:
-            newLayer->AddUnit(new Linear(this->layers.back()));
+            newU = new Linear(this->layers.back());
             break;
+        }
+        newLayer->AddUnit(newU);
+    }
+
+    if (ol != nullptr)
+    {
+        for (size_t i = 0; i < ol->size(); i++)
+        {
+            for (size_t j = 0; j < this->layers.back()->size(); j++)
+            {
+                (*newLayer)[i].setconnectionweight(j, (*ol)[i].GetConnectionWeights()[j]);
+            }
         }
     }
     this->layers.push_back(newLayer);
+    if(ol != nullptr)
+    {
+        this->layers.push_back(ol);
+
+    }
+
+    
 }
 
 void NeuralNet::AddOutputLayer(int size, enum neuronTypes t)
@@ -230,7 +263,7 @@ void NeuralNet::setInput(const std::vector<nn_num_t> &values)
 
 void NeuralNet::ForwardPropagate()
 {
-    if(this->nOutputs == 0)
+    if (this->nOutputs == 0)
     {
         printf("Error - must configure neural net outputs before calling Output() or Learn()\n");
         exit(1);

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <vector>
 #include <math.h>
 
@@ -32,6 +33,8 @@ public:
     virtual void recalculate() = 0;
 
     void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] += delta; };
+
+    void setconnectionweight(int index, nn_num_t w) { this->connectionWeights[index] = w; };
 
     nn_num_t operator[](int index) { return connectionWeights[index]; };
 
@@ -205,10 +208,10 @@ public:
             delete this->layers[i];
         }
     }
-
     std::size_t size() { return this->layers.size(); };
+    std::size_t size(int index) { return (*this)[index]->size(); };
 
-    void AddLayer(int size, enum neuronTypes t);
+    void AddLayer(size_t size, enum neuronTypes t);
 
     void ConfigureOutput(int nOutputs, enum neuronTypes nt);
 
@@ -223,4 +226,54 @@ public:
     void dump();
 
     void setInput(const std::vector<nn_num_t> &values);
+
+    const nn_num_t GetWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to)
+    {
+        if ((from.first + 1 > this->size()) ||
+            (from.second + 1 > this->size(from.first)) ||
+            (from.first + 1 != to.first) ||
+            (to.first + 1 > this->size()) ||
+            (to.second + 1 > this->size(to.second)))
+        {
+            printf("Invalid request to get weight from layer %lu:%lu to layer %lu:%lu\n",
+                   from.first, from.second, to.first, to.second);
+            exit(1);
+        }
+        Layer &tl = *(*this)[to.first];
+        return tl[to.second].GetConnectionWeights()[from.second];
+    }
+
+    void ChangeWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to, nn_num_t delta)
+    {
+        if ((from.first + 1 > this->size()) ||
+            (from.second + 1 > this->size(from.first)) ||
+            (from.first + 1 != to.first) ||
+            (to.first + 1 > this->size()) ||
+            (to.second + 1 > this->size(to.second)))
+        {
+            printf("Invalid request to get weight from layer %lu:%lu to layer %lu:%lu\n",
+                   from.first, from.second, to.first, to.second);
+            exit(1);
+        }
+        Layer &tl = *(*this)[to.first];
+        tl[to.second].changeconnectionweight(from.second, delta);
+        // return tl[to.second].GetConnectionWeights()[from.second];
+    }
+
+    void SetWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to, nn_num_t w)
+    {
+        if ((from.first + 1 > this->size()) ||
+            (from.second + 1 > this->size(from.first)) ||
+            (from.first + 1 != to.first) ||
+            (to.first + 1 > this->size()) ||
+            (to.second + 1 > this->size(to.second)))
+        {
+            printf("Invalid request to get weight from layer %lu:%lu to layer %lu:%lu\n",
+                   from.first, from.second, to.first, to.second);
+            exit(1);
+        }
+        Layer &tl = *(*this)[to.first];
+        tl[to.second].setconnectionweight(from.second, w);
+        // return tl[to.second].GetConnectionWeights()[from.second];
+    }
 };

@@ -10,7 +10,7 @@ int main()
     n.dump();
     printf("\n\n\n\n\n");
 
-    for (int i = 0; i < 1000; i++)
+    for (int i = 0; i < 5; i++)
     {
         for (int a = 0; a < 2; a++)
         {
@@ -25,7 +25,15 @@ int main()
                 n.Learn({static_cast<nn_num_t>(result)}, 1.0);
             }
         }
+        if (i == 3)
+        {
+            printf("\n\nInserting new layer!\n");
+            n.AddLayer(1, NeuralNet::linear);
+        }
     }
+    n.dump();
+    printf("\n\n\n\n");
+    n.AddLayer(1, NeuralNet::perceptron);
 
     for (int a = 0; a < 2; a++)
     {
@@ -41,4 +49,20 @@ int main()
 
     printf("\n\n");
     n.dump();
+
+    for (size_t i = 1; i < n.size(); i++)
+    {
+        for (size_t j = 0; j < n.size(i); j++)
+        {
+            for (size_t k = 0; k < n.size(i - 1); k++)
+            {
+                nn_num_t w_ij = n.GetWeight({i - 1, k}, {i, j});
+                if (w_ij != 0.0)
+                {
+                    printf("%lu:%lu -> %lu:%lu: % 2.6f\n", i - 1, k, i, j, w_ij);
+                }
+            }
+        }
+    }
+
 }
