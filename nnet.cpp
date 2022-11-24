@@ -109,6 +109,7 @@ void NeuralNet::ConfigureOutput(int nOutputs, enum neuronTypes nt)
 
 nn_num_t NeuralNet::Output()
 {
+    this->ForwardPropagate();
     switch (this->nOutputs)
     {
     case 1:
@@ -133,7 +134,7 @@ nn_num_t NeuralNet::Output()
     return -999.999;
 }
 
-void NeuralNet::BackPropagate(std::vector<nn_num_t> expectedOutput)
+void NeuralNet::BackPropagate(const std::vector<nn_num_t> &expectedOutput)
 {
     /*
     // for each node j in the output layer do
@@ -146,7 +147,7 @@ void NeuralNet::BackPropagate(std::vector<nn_num_t> expectedOutput)
     */
     // delta of each output j = activation derivative(j) * (expected(j) - actual(j))
     OutputLayer &ol = *static_cast<OutputLayer *>(this->layers.back());
-    for(size_t j = 0; j < ol.size(); j++)
+    for (size_t j = 0; j < ol.size(); j++)
     {
         ol[j].delta = ol[j].activationDeriv() * (expectedOutput[j] - ol[j].activation());
     }
@@ -168,7 +169,6 @@ void NeuralNet::BackPropagate(std::vector<nn_num_t> expectedOutput)
             l[i].delta = sum * l[i].activationDeriv();
         }
     }
-
 }
 
 void NeuralNet::UpdateWeights(nn_num_t learningRate)
@@ -186,16 +186,15 @@ void NeuralNet::UpdateWeights(nn_num_t learningRate)
             }
         }
     }
-
 }
 
 void NeuralNet::dump()
 {
-    printf("Neural Net with %ld layers\n", this->layers.size());
+    printf("Neural Net with %lu layers\n", this->layers.size());
     for (size_t i = 0; i < this->layers.size(); i++)
     {
         Layer &l = *(*this)[i];
-        printf("Layer %ld - %ld units\n", i, l.size());
+        printf("Layer %lu - %lu units\n", i, l.size());
         for (size_t j = 0; j < l.size(); j++)
         {
             Unit &u = l[j];
@@ -212,16 +211,17 @@ void NeuralNet::dump()
     printf("Output value: % f\n", this->Output());
 }
 
-void NeuralNet::setInput(std::vector<nn_num_t> values)
+void NeuralNet::setInput(const std::vector<nn_num_t> &values)
 {
     // - 1 to account for bias neuron
     if (values.size() != this->layers[0]->size() - 1)
     {
         printf("Error setting input for neural network!\n"
-        "Expected %lu input values, received vector of size %lu\n", this->layers[0]->size(), values.size());
+               "Expected %lu input values, received vector of size %lu\n",
+               this->layers[0]->size(), values.size());
     }
     InputLayer &il = *static_cast<InputLayer *>(this->layers[0]);
-    for(size_t i = 0; i < values.size(); i++)
+    for (size_t i = 0; i < values.size(); i++)
     {
         // offset by 1 to skip over bias neuron at index 0
         il[i + 1].setValue(values[i]);
@@ -230,6 +230,11 @@ void NeuralNet::setInput(std::vector<nn_num_t> values)
 
 void NeuralNet::ForwardPropagate()
 {
+    if(this->nOutputs == 0)
+    {
+        printf("Error - must configure neural net outputs before calling Output() or Learn()\n");
+        exit(1);
+    }
     for (size_t i = 1; i < this->size(); i++)
     {
         Layer *l = this->operator[](i);

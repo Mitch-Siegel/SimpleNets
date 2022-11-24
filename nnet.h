@@ -20,10 +20,9 @@ protected:
     nn_num_t value_ = 0.0;
 
 public:
-    nn_num_t delta;
-    nn_num_t error;
+    nn_num_t delta = 0.0;
+    nn_num_t error = 0.0;
 
-    // virtual Unit() = 0;
     virtual ~Unit(){};
 
     nn_num_t raw() { return value_; };
@@ -44,11 +43,11 @@ public:
 class Input : public Unit
 {
 public:
-    Input() { value_ = 0.0; };
+    explicit Input() { value_ = 0.0; };
     ~Input(){};
-    nn_num_t activation() { return value_; };
-    nn_num_t activationDeriv() { return 0.0; };
-    void recalculate(){};
+    nn_num_t activation() override { return value_; };
+    nn_num_t activationDeriv() override { return 0.0; };
+    void recalculate() override{};
     void setValue(nn_num_t newValue) { this->value_ = newValue; };
 
     void backpropagate(nn_num_t error, nn_num_t alpha){};
@@ -69,14 +68,10 @@ public:
     // this->inputLayer = nullptr;
     // this->delta = 0.0;
     // };
-    Neuron(Layer *inputLayer)
-    {
-        this->inputLayer = inputLayer;
-        this->delta = 0.0;
-    };
+    explicit Neuron(Layer *inputLayer) { this->inputLayer = inputLayer; };
     ~Neuron(){};
 
-    void recalculate();
+    void recalculate() override;
 
     void backpropagate(nn_num_t error, nn_num_t alpha);
 };
@@ -84,9 +79,9 @@ public:
 class Logistic : public Neuron
 {
 public:
-    Logistic(Layer *inputLayer) : Neuron(inputLayer){};
-    nn_num_t activation() { return 1.0 / (1.0 + exp(-1.0 * this->value_)); };
-    nn_num_t activationDeriv()
+    explicit Logistic(Layer *inputLayer) : Neuron(inputLayer){};
+    nn_num_t activation() override { return 1.0 / (1.0 + exp(-1.0 * this->value_)); };
+    nn_num_t activationDeriv() override
     {
         nn_num_t a = this->activation();
         return a * (1.0 - a);
@@ -96,9 +91,9 @@ public:
 class Perceptron : public Neuron
 {
 public:
-    Perceptron(Layer *inputLayer) : Neuron(inputLayer){};
-    nn_num_t activation() { return (this->value_ > 0) ? 1.0 : 0.0; };
-    nn_num_t activationDeriv()
+    explicit Perceptron(Layer *inputLayer) : Neuron(inputLayer){};
+    nn_num_t activation() override { return (this->value_ > 0) ? 1.0 : 0.0; };
+    nn_num_t activationDeriv() override
     {
         nn_num_t a = 0.001 / (0.001 + exp(-100.0 * this->value_));
         return a * (1.0 - a);
@@ -108,19 +103,18 @@ public:
 class Linear : public Neuron
 {
 public:
-    Linear(Layer *inputLayer) : Neuron(inputLayer){};
-    nn_num_t activation() { return this->value_; };
-    nn_num_t activationDeriv() { return 1.0; };
+    explicit Linear(Layer *inputLayer) : Neuron(inputLayer){};
+    nn_num_t activation() override { return this->value_; };
+    nn_num_t activationDeriv() override { return 1.0; };
 };
 
 class BiasNeuron : public Unit
 {
 public:
-    BiasNeuron() : Unit() { value_ = 1.0; };
-    virtual nn_num_t activation() { return value_; };
-    virtual nn_num_t activationDeriv() { return 0.0; };
-    void recalculate(){};
-    void backpropagate(nn_num_t error, nn_num_t alpha){};
+    explicit BiasNeuron() : Unit() { value_ = 1.0; };
+    virtual nn_num_t activation() override { return value_; };
+    virtual nn_num_t activationDeriv() override { return 0.0; };
+    void recalculate() override{};
 };
 
 class NeuralNet;
@@ -139,7 +133,11 @@ public:
     Unit &operator[](int index) { return *this->units.at(index); };
 
     Layer(NeuralNet *myNet_, bool addBias);
-    ~Layer();
+    ~Layer()
+    {
+        for (auto u : this->units)
+            delete u;
+    };
 
     void AddUnit(Unit *u);
 
@@ -155,30 +153,29 @@ public:
 class NeuronLayer : public Layer
 {
 public:
-    Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
+    explicit NeuronLayer(NeuralNet *myNet_) : Layer(myNet_, true){};
 
-    NeuronLayer(NeuralNet *myNet_) : Layer(myNet_, true){};
+    Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
 };
 
 class InputLayer : public Layer
 {
 public:
-    Input &operator[](int index) { return *static_cast<Input *>(this->units.at(index)); };
+    explicit InputLayer(NeuralNet *myNet_) : Layer(myNet_, false){};
 
-    InputLayer(NeuralNet *myNet_) : Layer(myNet_, false){};
+    Input &operator[](int index) { return *static_cast<Input *>(this->units.at(index)); };
 };
 
 class OutputLayer : public Layer
 {
 public:
-    Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
+    explicit OutputLayer(NeuralNet *myNet_) : Layer(myNet_, false){};
 
-    OutputLayer(NeuralNet *myNet_) : Layer(myNet_, false){};
+    Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
 };
 
 class NeuralNet
 {
-
     friend class Layer;
 
 public:
@@ -192,18 +189,22 @@ public:
 private:
     std::vector<Layer *> layers;
     int nOutputs = 0;
-
     void AddOutputLayer(int size, enum neuronTypes t);
     Layer *operator[](int index) { return this->layers[index]; };
-    OutputLayer &output() { return *static_cast<OutputLayer *>(this->layers.back()); };
     NeuronLayer &hiddenLayer(int index) { return *static_cast<NeuronLayer *>((*this)[index]); };
-    void BackPropagate(std::vector<nn_num_t> expectedOutput);
+    void BackPropagate(const std::vector<nn_num_t> &expectedOutput);
     void UpdateWeights(nn_num_t learningRate);
     void ForwardPropagate();
 
-
 public:
-    NeuralNet(int nInputs);
+    explicit NeuralNet(int nInputs);
+    ~NeuralNet()
+    {
+        for (size_t i = 0; i < this->size(); i++)
+        {
+            delete this->layers[i];
+        }
+    }
 
     std::size_t size() { return this->layers.size(); };
 
@@ -213,7 +214,7 @@ public:
 
     nn_num_t Output();
 
-    void Learn(std::vector<nn_num_t> expectedOutput, nn_num_t learningRate)
+    void Learn(const std::vector<nn_num_t> &expectedOutput, nn_num_t learningRate)
     {
         this->BackPropagate(expectedOutput);
         this->UpdateWeights(learningRate);
@@ -221,6 +222,5 @@ public:
 
     void dump();
 
-    void setInput(std::vector<nn_num_t> values);
-
+    void setInput(const std::vector<nn_num_t> &values);
 };

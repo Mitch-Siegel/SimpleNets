@@ -17,14 +17,12 @@ int main()
             for (int b = 0; b < 2; b++)
             {
                 n.setInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
-                n.ForwardPropagate();
                 bool result = a & b;
                 printf("Input %d,%d: output %f - expected %d - %s\n\n",
                        a, b,
                        n.Output(), a & b,
                        (static_cast<nn_num_t>(result) == n.Output()) ? "[PASS]" : "[FAIL]");
-                n.BackPropagate({static_cast<nn_num_t>(result)});
-                n.UpdateWeights(1.0);
+                n.Learn({static_cast<nn_num_t>(result)}, 1.0);
             }
         }
     }
@@ -34,7 +32,6 @@ int main()
         for (int b = 0; b < 2; b++)
         {
             n.setInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
-            n.ForwardPropagate();
             printf("Input %d,%d: output %f - expected %d - %s\n",
                    a, b,
                    n.Output(), a & b,
