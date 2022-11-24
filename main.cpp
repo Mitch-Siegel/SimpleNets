@@ -27,9 +27,6 @@ int main()
                 n.UpdateWeights(1.0);
             }
         }
-
-        // n.dump();
-        // printf("\n\n\n\n\n");
     }
 
     for (int a = 0; a < 2; a++)

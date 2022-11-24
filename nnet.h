@@ -7,6 +7,10 @@ class Layer;
 
 class NeuronLayer;
 
+/*
+ * A unit represents a node in the network
+ * connections flow from left to right (lower to higher layer indices)
+ */
 class Unit
 {
     friend class Layer;
@@ -18,6 +22,9 @@ protected:
 public:
     nn_num_t delta;
     nn_num_t error;
+
+    // virtual Unit() = 0;
+    virtual ~Unit(){};
 
     nn_num_t raw() { return value_; };
     virtual nn_num_t activation() = 0;
@@ -38,8 +45,9 @@ class Input : public Unit
 {
 public:
     Input() { value_ = 0.0; };
-    virtual nn_num_t activation() { return value_; };
-    virtual nn_num_t activationDeriv() { return 0.0; };
+    ~Input(){};
+    nn_num_t activation() { return value_; };
+    nn_num_t activationDeriv() { return 0.0; };
     void recalculate(){};
     void setValue(nn_num_t newValue) { this->value_ = newValue; };
 
@@ -56,16 +64,17 @@ private:
     void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] += (this->connectionWeights[index] * delta); };
 
 public:
-    Neuron()
-    {
-        this->inputLayer = nullptr;
-        this->delta = 0.0;
-    };
+    // Neuron()
+    // {
+    // this->inputLayer = nullptr;
+    // this->delta = 0.0;
+    // };
     Neuron(Layer *inputLayer)
     {
         this->inputLayer = inputLayer;
         this->delta = 0.0;
     };
+    ~Neuron(){};
 
     void recalculate();
 
@@ -75,7 +84,6 @@ public:
 class Logistic : public Neuron
 {
 public:
-    Logistic(){};
     Logistic(Layer *inputLayer) : Neuron(inputLayer){};
     nn_num_t activation() { return 1.0 / (1.0 + exp(-1.0 * this->value_)); };
     nn_num_t activationDeriv()
@@ -88,7 +96,6 @@ public:
 class Perceptron : public Neuron
 {
 public:
-    Perceptron(){};
     Perceptron(Layer *inputLayer) : Neuron(inputLayer){};
     nn_num_t activation() { return (this->value_ > 0) ? 1.0 : 0.0; };
     nn_num_t activationDeriv()
@@ -101,7 +108,6 @@ public:
 class Linear : public Neuron
 {
 public:
-    Linear(){};
     Linear(Layer *inputLayer) : Neuron(inputLayer){};
     nn_num_t activation() { return this->value_; };
     nn_num_t activationDeriv() { return 1.0; };
@@ -130,9 +136,10 @@ private:
     NeuralNet *myNet;
 
 public:
-    Unit *operator[](int index) { return this->units.at(index); };
+    Unit &operator[](int index) { return *this->units.at(index); };
 
     Layer(NeuralNet *myNet_, bool addBias);
+    ~Layer();
 
     void AddUnit(Unit *u);
 
@@ -148,7 +155,7 @@ public:
 class NeuronLayer : public Layer
 {
 public:
-    Neuron *operator[](int index) { return static_cast<Neuron *>(this->units.at(index)); };
+    Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
 
     NeuronLayer(NeuralNet *myNet_) : Layer(myNet_, true){};
 };
@@ -156,7 +163,7 @@ public:
 class InputLayer : public Layer
 {
 public:
-    Input *operator[](int index) { return static_cast<Input *>(this->units.at(index)); };
+    Input &operator[](int index) { return *static_cast<Input *>(this->units.at(index)); };
 
     InputLayer(NeuralNet *myNet_) : Layer(myNet_, false){};
 };
@@ -164,13 +171,16 @@ public:
 class OutputLayer : public Layer
 {
 public:
-    Neuron *operator[](int index) { return static_cast<Neuron *>(this->units.at(index)); };
+    Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
 
     OutputLayer(NeuralNet *myNet_) : Layer(myNet_, false){};
 };
 
 class NeuralNet
 {
+
+    friend class Layer;
+
 public:
     enum neuronTypes
     {
@@ -181,16 +191,21 @@ public:
 
 private:
     std::vector<Layer *> layers;
-    int nOutputs;
+    int nOutputs = 0;
 
     void AddOutputLayer(int size, enum neuronTypes t);
+    Layer *operator[](int index) { return this->layers[index]; };
+    OutputLayer &output() { return *static_cast<OutputLayer *>(this->layers.back()); };
+    NeuronLayer &hiddenLayer(int index) { return *static_cast<NeuronLayer *>((*this)[index]); };
+    void BackPropagate(std::vector<nn_num_t> expectedOutput);
+    void UpdateWeights(nn_num_t learningRate);
+    void ForwardPropagate();
+
 
 public:
     NeuralNet(int nInputs);
 
     std::size_t size() { return this->layers.size(); };
-
-    Layer *operator[](int index) { return this->layers[index]; };
 
     void AddLayer(int size, enum neuronTypes t);
 
@@ -198,13 +213,14 @@ public:
 
     nn_num_t Output();
 
-    void BackPropagate(std::vector<nn_num_t> expectedOutput);
-
-    void UpdateWeights(nn_num_t learningRate);
+    void Learn(std::vector<nn_num_t> expectedOutput, nn_num_t learningRate)
+    {
+        this->BackPropagate(expectedOutput);
+        this->UpdateWeights(learningRate);
+    };
 
     void dump();
 
     void setInput(std::vector<nn_num_t> values);
 
-    void ForwardPropagate();
 };
