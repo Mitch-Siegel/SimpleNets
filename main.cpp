@@ -10,7 +10,7 @@ int main()
     n.dump();
     printf("\n\n\n\n\n");
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 120; i++)
     {
         for (int a = 0; a < 2; a++)
         {
@@ -28,12 +28,19 @@ int main()
         if (i == 3)
         {
             printf("\n\nInserting new layer!\n");
-            n.AddLayer(1, NeuralNet::linear);
+            n.AddLayer(3, NeuralNet::linear);
+            // n.dump();
+            // exit(1);
+        }
+        else if(i == 6)
+        {
+            printf("\n\nRemoving from layer!\n");
+            n.RemoveNeuron({1, 2});
         }
     }
     n.dump();
     printf("\n\n\n\n");
-    n.AddLayer(1, NeuralNet::perceptron);
+    // n.AddLayer(1, NeuralNet::perceptron);
 
     for (int a = 0; a < 2; a++)
     {

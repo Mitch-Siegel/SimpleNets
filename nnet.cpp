@@ -46,6 +46,17 @@ void Layer::AddUnit(Unit *u)
     }
 }
 
+void Layer::RemoveUnit(size_t index)
+{
+    delete this->units[index];
+    this->units.erase(this->units.begin() + index);
+    Layer *nl = (*this->myNet)[this->index_ + 1];
+    for (size_t i = 0; i < nl->size(); i++)
+    {
+        (*nl)[i].removeConnection(index);
+    }
+}
+
 NeuralNet::NeuralNet(int nInputs)
 {
     this->layers.push_back(new Layer(this, true));
@@ -58,36 +69,34 @@ NeuralNet::NeuralNet(int nInputs)
 void NeuralNet::AddLayer(size_t size, enum neuronTypes t)
 {
     OutputLayer *ol = nullptr;
+    NeuronLayer *newLayer = nullptr;
     if (this->nOutputs > 0)
     {
         ol = static_cast<OutputLayer *>(this->layers.back());
         this->layers.pop_back();
+        newLayer = new NeuronLayer(this, true);
+
         for (auto u = ol->begin(); u != ol->end(); ++u)
         {
             while ((*u)->GetConnectionWeights().size() < size + 1)
             {
-                (*u)->addConnection(0.0);
+                (*u)->addConnection(0.01);
+            }
+            while ((*u)->GetConnectionWeights().size() > size + 1)
+            {
+                (*u)->removeConnection((*u)->GetConnectionWeights().size() - 1);
             }
         }
+        ol->setInputLayer(newLayer);
     }
-    NeuronLayer *newLayer = new NeuronLayer(this);
+    else
+    {
+        newLayer = new NeuronLayer(this, true);
+    }
+    // newLayer->setIndex(ol->index());
     for (size_t i = 0; i < size; i++)
     {
-        Unit *newU;
-        switch (t)
-        {
-        case logistic:
-            newU = new Logistic(this->layers.back());
-            break;
-
-        case perceptron:
-            newU = new Perceptron(this->layers.back());
-            break;
-
-        case linear:
-            newU = new Linear(this->layers.back());
-            break;
-        }
+        Unit *newU = GenerateUnitFromType(t, this->layers.back());
         newLayer->AddUnit(newU);
     }
 
@@ -102,13 +111,11 @@ void NeuralNet::AddLayer(size_t size, enum neuronTypes t)
         }
     }
     this->layers.push_back(newLayer);
-    if(ol != nullptr)
+    if (ol != nullptr)
     {
+        ol->setIndex(this->size());
         this->layers.push_back(ol);
-
     }
-
-    
 }
 
 void NeuralNet::AddOutputLayer(int size, enum neuronTypes t)
@@ -116,20 +123,7 @@ void NeuralNet::AddOutputLayer(int size, enum neuronTypes t)
     OutputLayer *ol = new OutputLayer(this);
     for (int i = 0; i < size; i++)
     {
-        switch (t)
-        {
-        case logistic:
-            ol->AddUnit(new Logistic(this->layers.back()));
-            break;
-
-        case perceptron:
-            ol->AddUnit(new Perceptron(this->layers.back()));
-            break;
-
-        case linear:
-            ol->AddUnit(new Linear(this->layers.back()));
-            break;
-        }
+        ol->AddUnit(GenerateUnitFromType(t, this->layers.back()));
     }
     this->layers.push_back(ol);
 }
@@ -206,7 +200,6 @@ void NeuralNet::BackPropagate(const std::vector<nn_num_t> &expectedOutput)
 
 void NeuralNet::UpdateWeights(nn_num_t learningRate)
 {
-    printf("updating weights with learning rate %f\n", learningRate);
     for (size_t li = this->size() - 1; li > 0; li--)
     {
         Layer &l = *(*this)[li];
@@ -227,7 +220,7 @@ void NeuralNet::dump()
     for (size_t i = 0; i < this->layers.size(); i++)
     {
         Layer &l = *(*this)[i];
-        printf("Layer %lu - %lu units\n", i, l.size());
+        printf("Layer %lu (index %lu) - %lu units\n", i, l.index(), l.size());
         for (size_t j = 0; j < l.size(); j++)
         {
             Unit &u = l[j];

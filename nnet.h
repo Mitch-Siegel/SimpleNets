@@ -41,6 +41,8 @@ public:
     const std::vector<nn_num_t> &GetConnectionWeights() { return this->connectionWeights; };
 
     void addConnection(nn_num_t weight) { this->connectionWeights.push_back(weight); };
+
+    void removeConnection(size_t index) { this->connectionWeights.erase(this->connectionWeights.begin() + index); };
 };
 
 class Input : public Unit
@@ -59,11 +61,15 @@ public:
 class Neuron : public Unit
 {
     friend class Layer;
+    friend class NeuronLayer;
+    friend class OutputLayer;
 
 private:
     Layer *inputLayer;
 
     void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] += (this->connectionWeights[index] * delta); };
+
+    void setInputLayer(Layer *newInputLayer) { this->inputLayer = newInputLayer; };
 
 public:
     // Neuron()
@@ -133,7 +139,10 @@ private:
     NeuralNet *myNet;
 
 public:
-    Unit &operator[](int index) { return *this->units.at(index); };
+    Unit &operator[](size_t index)
+    {
+        return *this->units.at(index);
+    };
 
     Layer(NeuralNet *myNet_, bool addBias);
     ~Layer()
@@ -144,9 +153,13 @@ public:
 
     void AddUnit(Unit *u);
 
+    void RemoveUnit(size_t index);
+
     std::size_t size() { return this->units.size(); };
 
     std::size_t index() { return this->index_; };
+
+    void setIndex(size_t i) { this->index_ = i; };
 
     std::vector<Unit *>::iterator begin() { return this->units.begin(); };
 
@@ -156,9 +169,19 @@ public:
 class NeuronLayer : public Layer
 {
 public:
-    explicit NeuronLayer(NeuralNet *myNet_) : Layer(myNet_, true){};
+    explicit NeuronLayer(NeuralNet *myNet_, bool addBias) : Layer(myNet_, addBias){};
 
     Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
+
+    void setInputLayer(Layer *l)
+    {
+        for (auto u = this->begin(); u != this->end(); ++u)
+        {
+            Neuron *n = static_cast<Neuron *>(*u);
+            n->setInputLayer(l);
+        };
+    }
+
 };
 
 class InputLayer : public Layer
@@ -169,12 +192,14 @@ public:
     Input &operator[](int index) { return *static_cast<Input *>(this->units.at(index)); };
 };
 
-class OutputLayer : public Layer
+class OutputLayer : public NeuronLayer
 {
+private:
 public:
-    explicit OutputLayer(NeuralNet *myNet_) : Layer(myNet_, false){};
+    explicit OutputLayer(NeuralNet *myNet_) : NeuronLayer(myNet_, false){};
 
     Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
+
 };
 
 class NeuralNet
@@ -199,6 +224,25 @@ private:
     void UpdateWeights(nn_num_t learningRate);
     void ForwardPropagate();
 
+    static Unit *GenerateUnitFromType(neuronTypes t, Layer *inputLayer)
+    {
+        switch (t)
+        {
+        case logistic:
+            return new Logistic(inputLayer);
+            break;
+
+        case perceptron:
+            return new Perceptron(inputLayer);
+            break;
+
+        case linear:
+            return new Linear(inputLayer);
+            break;
+        }
+        return nullptr;
+    }
+
 public:
     explicit NeuralNet(int nInputs);
     ~NeuralNet()
@@ -219,6 +263,12 @@ public:
 
     void Learn(const std::vector<nn_num_t> &expectedOutput, nn_num_t learningRate)
     {
+        if(expectedOutput.size() != this->layers.back()->size())
+        {
+            printf("Provided expected output array of length %lu, expected size %lu\n", 
+            expectedOutput.size(), this->layers.back()->size());
+            exit(1);
+        }
         this->BackPropagate(expectedOutput);
         this->UpdateWeights(learningRate);
     };
@@ -233,7 +283,7 @@ public:
             (from.second + 1 > this->size(from.first)) ||
             (from.first + 1 != to.first) ||
             (to.first + 1 > this->size()) ||
-            (to.second + 1 > this->size(to.second)))
+            (to.second + 1 > this->size(to.first)))
         {
             printf("Invalid request to get weight from layer %lu:%lu to layer %lu:%lu\n",
                    from.first, from.second, to.first, to.second);
@@ -249,7 +299,7 @@ public:
             (from.second + 1 > this->size(from.first)) ||
             (from.first + 1 != to.first) ||
             (to.first + 1 > this->size()) ||
-            (to.second + 1 > this->size(to.second)))
+            (to.second + 1 > this->size(to.first)))
         {
             printf("Invalid request to get weight from layer %lu:%lu to layer %lu:%lu\n",
                    from.first, from.second, to.first, to.second);
@@ -266,7 +316,7 @@ public:
             (from.second + 1 > this->size(from.first)) ||
             (from.first + 1 != to.first) ||
             (to.first + 1 > this->size()) ||
-            (to.second + 1 > this->size(to.second)))
+            (to.second + 1 > this->size(to.first)))
         {
             printf("Invalid request to get weight from layer %lu:%lu to layer %lu:%lu\n",
                    from.first, from.second, to.first, to.second);
@@ -276,4 +326,47 @@ public:
         tl[to.second].setconnectionweight(from.second, w);
         // return tl[to.second].GetConnectionWeights()[from.second];
     }
+
+    void AddNeuron(size_t layer, neuronTypes t)
+    {
+        if (layer == 0)
+        {
+            printf("Use AddInput() to add input (neuron on layer 0)\n");
+            exit(1);
+        }
+        else if (layer == this->size() - 1)
+        {
+            printf("Can't add output to existing network\n");
+            exit(1);
+        }
+        this->layers[layer]->AddUnit(GenerateUnitFromType(t, this->layers[layer - 1]));
+    };
+
+    void RemoveNeuron(std::pair<size_t, size_t> index)
+    {
+        if (index.first == 0)
+        {
+            printf("Can't remove input (neuron from layer 0)\n");
+            exit(1);
+        }
+        else if (index.first == this->size() - 1)
+        {
+            printf("Can't remove output from existing network\n");
+            exit(1);
+        }
+        else if (index.second == 0)
+        {
+            printf("Can't remove bias neuron (index 0) from a given layer!\n");
+            exit(1);
+        }
+        else if (this->size(index.first) < index.second + 1)
+        {
+            printf("Can't remove neuron at index %lu from layer %lu (layer has %lu neurons)\n",
+                   index.second, index.first, this->size(index.first));
+            exit(1);
+        }
+        this->layers[index.first]->RemoveUnit(index.second);
+    }
+
+    void AddInput() { this->layers.front()->AddUnit(new Input()); };
 };
