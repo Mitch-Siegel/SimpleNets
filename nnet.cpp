@@ -3,162 +3,39 @@
 #include "nnet.h"
 #include <stdio.h>
 
-void Neuron::Recalculate()
+// Neural Net base
+Unit *NeuralNet::GenerateUnitFromType(neuronTypes t, Layer *inputLayer)
 {
-    this->value_ = 0.0;
-    std::size_t nInputs = this->connectionWeights.size();
-    for (std::size_t i = 0; i < nInputs; i++)
+    switch (t)
     {
-        this->value_ += ((*this->inputLayer)[i].Activation() * this->connectionWeights[i]);
-    }
-}
-
-NeuralNet::NeuralNet(int nInputs)
-{
-    this->layers.push_back(new Layer(this, true));
-    for (int i = 0; i < nInputs; i++)
-    {
-        this->layers.back()->AddUnit(new Input());
-    }
-}
-
-void NeuralNet::AddLayer(size_t size, enum neuronTypes t)
-{
-    OutputLayer *ol = nullptr;
-    NeuronLayer *newLayer = nullptr;
-    if (this->nOutputs > 0)
-    {
-        ol = static_cast<OutputLayer *>(this->layers.back());
-        this->layers.pop_back();
-        newLayer = new NeuronLayer(this, true);
-
-        for (auto u = ol->begin(); u != ol->end(); ++u)
-        {
-            while ((*u)->GetConnectionWeights().size() < size + 1)
-            {
-                (*u)->AddConnection(0.01);
-            }
-            while ((*u)->GetConnectionWeights().size() > size + 1)
-            {
-                (*u)->RemoveConnection((*u)->GetConnectionWeights().size() - 1);
-            }
-        }
-        ol->SetInputLayer(newLayer);
-    }
-    else
-    {
-        newLayer = new NeuronLayer(this, true);
-    }
-    // newLayer->SetIndex(ol->index());
-    for (size_t i = 0; i < size; i++)
-    {
-        Unit *newU = GenerateUnitFromType(t, this->layers.back());
-        newLayer->AddUnit(newU);
-    }
-
-    if (ol != nullptr)
-    {
-        for (size_t i = 0; i < ol->size(); i++)
-        {
-            for (size_t j = 0; j < this->layers.back()->size(); j++)
-            {
-                (*newLayer)[i].SetConnectionWeight(j, (*ol)[i].GetConnectionWeights()[j]);
-            }
-        }
-    }
-    this->layers.push_back(newLayer);
-    if (ol != nullptr)
-    {
-        ol->SetIndex(this->size());
-        this->layers.push_back(ol);
-    }
-}
-
-void NeuralNet::AddOutputLayer(int size, enum neuronTypes t)
-{
-    OutputLayer *ol = new OutputLayer(this);
-    for (int i = 0; i < size; i++)
-    {
-        ol->AddUnit(GenerateUnitFromType(t, this->layers.back()));
-    }
-    this->layers.push_back(ol);
-}
-
-void NeuralNet::ConfigureOutput(int nOutputs, enum neuronTypes nt)
-{
-    this->AddOutputLayer(nOutputs, nt);
-    this->nOutputs = nOutputs;
-}
-
-nn_num_t NeuralNet::Output()
-{
-    this->ForwardPropagate();
-    switch (this->nOutputs)
-    {
-    case 1:
-        return ((*this->layers.back())[0].Activation());
+    case logistic:
+        return new Logistic(inputLayer);
         break;
 
-    default:
-        int maxIndex = 0;
-        nn_num_t maxValue = -1.0 * MAXFLOAT;
-        OutputLayer &ol = *static_cast<OutputLayer *>(this->layers.back());
-        for (size_t i = 0; i < ol.size(); i++)
-        {
-            nn_num_t thisOutput = ol[i].Activation();
-            if (thisOutput > maxValue)
-            {
-                maxValue = thisOutput;
-                maxIndex = i;
-            }
-        }
-        return (nn_num_t)maxIndex;
+    case perceptron:
+        return new Perceptron(inputLayer);
+        break;
+
+    case linear:
+        return new Linear(inputLayer);
+        break;
     }
-    return -999.999;
+    return nullptr;
 }
 
-void NeuralNet::BackPropagate(const std::vector<nn_num_t> &expectedOutput)
+Layer *NeuralNet::operator[](int index)
 {
-    // delta of each output j = activation derivative(j) * (expected(j) - actual(j))
-    OutputLayer &ol = *static_cast<OutputLayer *>(this->layers.back());
-    for (size_t j = 0; j < ol.size(); j++)
-    {
-        ol[j].delta = ol[j].ActivationDeriv() * (expectedOutput[j] - ol[j].Activation());
-    }
-
-    // for all other layers, delta of a node i in the layer is:
-    // activation derivative(i) * sum for all j(weight of connection from i to j * delta(j))
-    for (size_t li = this->layers.size() - 2; li > 0; li--)
-    {
-        Layer &l = *this->layers[li];
-        Layer &nl = *this->layers[li + 1];
-        for (size_t i = 0; i < l.size(); i++)
-        {
-            nn_num_t sum = 0.0;
-            for (size_t nli = 0; nli < nl.size(); nli++)
-            {
-                Unit &j = nl[nli];
-                sum += (j.GetConnectionWeights()[i] * j.delta);
-            }
-            l[i].delta = sum * l[i].ActivationDeriv();
-        }
-    }
+    return this->layers[index];
 }
 
-void NeuralNet::UpdateWeights(nn_num_t learningRate)
+size_t NeuralNet::size()
 {
-    for (size_t li = this->size() - 1; li > 0; li--)
-    {
-        Layer &l = *(*this)[li];
-        Layer &pl = *(*this)[li - 1];
-        for (auto j = l.begin(); j != l.end(); ++j)
-        {
-            for (size_t i = 0; i < pl.size(); i++)
-            {
-                (*j)->ChangeConnectionWeight(i, learningRate * pl[i].Activation() * (*j)->delta);
-            }
-        }
-    }
+    return this->layers.size();
+}
+
+size_t NeuralNet::size(int index)
+{
+    return (*this)[index]->size();
 }
 
 void NeuralNet::Dump()
@@ -201,19 +78,96 @@ void NeuralNet::SetInput(const std::vector<nn_num_t> &values)
     }
 }
 
-void NeuralNet::ForwardPropagate()
+const nn_num_t NeuralNet::GetWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to)
 {
-    if (this->nOutputs == 0)
+    if ((from.first + 1 > this->size()) ||
+        (from.second + 1 > this->size(from.first)) ||
+        (from.first + 1 != to.first) ||
+        (to.first + 1 > this->size()) ||
+        (to.second + 1 > this->size(to.first)))
     {
-        printf("Error - must configure neural net outputs before calling Output() or Learn()\n");
+        printf("Invalid request to get weight from layer %lu:%lu to layer %lu:%lu\n",
+               from.first, from.second, to.first, to.second);
         exit(1);
     }
-    for (size_t i = 1; i < this->size(); i++)
-    {
-        Layer *l = this->operator[](i);
-        for (auto u = l->begin(); u != l->end(); ++u)
-        {
-            (*u)->Recalculate();
-        }
-    }
+    Layer &tl = *(*this)[to.first];
+    return tl[to.second].GetConnectionWeights()[from.second];
 }
+
+void NeuralNet::ChangeWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to, nn_num_t delta)
+{
+    if ((from.first + 1 > this->size()) ||
+        (from.second + 1 > this->size(from.first)) ||
+        (from.first + 1 != to.first) ||
+        (to.first + 1 > this->size()) ||
+        (to.second + 1 > this->size(to.first)))
+    {
+        printf("Invalid request to get weight from layer %lu:%lu to layer %lu:%lu\n",
+               from.first, from.second, to.first, to.second);
+        exit(1);
+    }
+    Layer &tl = *(*this)[to.first];
+    tl[to.second].ChangeConnectionWeight(from.second, delta);
+    // return tl[to.second].GetConnectionWeights()[from.second];
+}
+
+void NeuralNet::SetWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to, nn_num_t w)
+{
+    if ((from.first + 1 > this->size()) ||
+        (from.second + 1 > this->size(from.first)) ||
+        (from.first + 1 != to.first) ||
+        (to.first + 1 > this->size()) ||
+        (to.second + 1 > this->size(to.first)))
+    {
+        printf("Invalid request to get weight from layer %lu:%lu to layer %lu:%lu\n",
+               from.first, from.second, to.first, to.second);
+        exit(1);
+    }
+    Layer &tl = *(*this)[to.first];
+    tl[to.second].SetConnectionWeight(from.second, w);
+    // return tl[to.second].GetConnectionWeights()[from.second];
+}
+
+void NeuralNet::AddNeuron(size_t layer, neuronTypes t)
+{
+    if (layer == 0)
+    {
+        printf("Use AddInput() to add input (neuron on layer 0)\n");
+        exit(1);
+    }
+    else if (layer == this->size() - 1)
+    {
+        printf("Can't add output to existing network\n");
+        exit(1);
+    }
+    this->layers[layer]->AddUnit(GenerateUnitFromType(t, this->layers[layer - 1]));
+};
+
+void NeuralNet::RemoveNeuron(std::pair<size_t, size_t> index)
+{
+    if (index.first == 0)
+    {
+        printf("Can't remove input (neuron from layer 0)\n");
+        exit(1);
+    }
+    else if (index.first == this->size() - 1)
+    {
+        printf("Can't remove output from existing network\n");
+        exit(1);
+    }
+    else if (index.second == 0)
+    {
+        printf("Can't remove bias neuron (index 0) from a given layer!\n");
+        exit(1);
+    }
+    else if (this->size(index.first) < index.second + 1)
+    {
+        printf("Can't remove neuron at index %lu from layer %lu (layer has %lu neurons)\n",
+               index.second, index.first, this->size(index.first));
+        exit(1);
+    }
+    this->layers[index.first]->RemoveUnit(index.second);
+}
+
+void NeuralNet::AddInput() { this->layers.front()->AddUnit(new Input()); };
+

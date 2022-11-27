@@ -1,4 +1,5 @@
 #include "units.h"
+#include "layers.h"
 
 Unit::~Unit()
 {
@@ -17,6 +18,16 @@ void Unit::SetConnectionWeight(int index, nn_num_t w)
 {
     this->connectionWeights[index] = w;
 };
+
+void Neuron::Recalculate()
+{
+    this->value_ = 0.0;
+    std::size_t nInputs = this->connectionWeights.size();
+    for (std::size_t i = 0; i < nInputs; i++)
+    {
+        this->value_ += ((*this->inputLayer)[i].Activation() * this->connectionWeights[i]);
+    }
+}
 
 nn_num_t Unit::operator[](int index)
 {

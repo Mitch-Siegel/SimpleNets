@@ -36,7 +36,8 @@ void Layer::AddUnit(Unit *u)
 
     if (this->index_ + 1 < this->myNet->size())
     {
-        NeuronLayer &forwardLayer = this->myNet->hiddenLayer(this->index_ + 1);
+    
+        NeuronLayer &forwardLayer = *static_cast<NeuronLayer *>((*this->myNet)[this->index_ + 1]);
         std::size_t forwardLayerSize = forwardLayer.size();
         for (std::size_t i = 0; i < forwardLayerSize; i++)
         {

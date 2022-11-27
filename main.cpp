@@ -1,10 +1,10 @@
 #include <stdio.h>
-#include "nnet.h"
+#include "feedforwardnn.h"
 
 int main()
 {
     printf("Hello, world!\n");
-    NeuralNet n(2);
+    FeedForwardNeuralNet n(2);
     // n.AddLayer(2, NeuralNet::linear);
     n.ConfigureOutput(1, NeuralNet::perceptron);
     n.Dump();

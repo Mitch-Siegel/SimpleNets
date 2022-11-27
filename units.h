@@ -61,7 +61,7 @@ private:
     void SetInputLayer(Layer *newInputLayer);
 
 public:
-    Neuron(Layer *inputLayer);
+    explicit Neuron(Layer *inputLayer);
     ~Neuron();
 
     void Recalculate() override;
@@ -79,8 +79,8 @@ public:
 class Perceptron : public Neuron
 {
 public:
-    Perceptron(Layer *inputLayer);
-    nn_num_t Activation();
+    explicit Perceptron(Layer *inputLayer);
+    nn_num_t Activation() override;
     nn_num_t ActivationDeriv() override;
 };
 
