@@ -1,206 +1,17 @@
-#include <stdio.h>
-#include <vector>
+#ifndef __NNET_H_
+#define __NNET_H_
+
 #include <math.h>
+#include <vector>
 
-typedef float nn_num_t;
+#include "layers.h"
 
+class Unit;
 class Layer;
-
+class InputLayer;
 class NeuronLayer;
+class OutputLayer;
 
-/*
- * A unit represents a node in the network
- * connections flow from left to right (lower to higher layer indices)
- */
-class Unit
-{
-    friend class Layer;
-
-protected:
-    std::vector<nn_num_t> connectionWeights;
-    nn_num_t value_ = 0.0;
-
-public:
-    nn_num_t delta = 0.0;
-    nn_num_t error = 0.0;
-
-    virtual ~Unit(){};
-
-    nn_num_t raw() { return value_; };
-    virtual nn_num_t activation() = 0;
-    virtual nn_num_t activationDeriv() = 0;
-
-    virtual void recalculate() = 0;
-
-    void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] += delta; };
-
-    void setconnectionweight(int index, nn_num_t w) { this->connectionWeights[index] = w; };
-
-    nn_num_t operator[](int index) { return connectionWeights[index]; };
-
-    const std::vector<nn_num_t> &GetConnectionWeights() { return this->connectionWeights; };
-
-    void addConnection(nn_num_t weight) { this->connectionWeights.push_back(weight); };
-
-    void removeConnection(size_t index) { this->connectionWeights.erase(this->connectionWeights.begin() + index); };
-};
-
-class Input : public Unit
-{
-public:
-    explicit Input() { value_ = 0.0; };
-    ~Input(){};
-    nn_num_t activation() override { return value_; };
-    nn_num_t activationDeriv() override { return 0.0; };
-    void recalculate() override{};
-    void setValue(nn_num_t newValue) { this->value_ = newValue; };
-
-    void backpropagate(nn_num_t error, nn_num_t alpha){};
-};
-
-class Neuron : public Unit
-{
-    friend class Layer;
-    friend class NeuronLayer;
-    friend class OutputLayer;
-
-private:
-    Layer *inputLayer;
-
-    void changeconnectionweight(int index, nn_num_t delta) { this->connectionWeights[index] += (this->connectionWeights[index] * delta); };
-
-    void setInputLayer(Layer *newInputLayer) { this->inputLayer = newInputLayer; };
-
-public:
-    // Neuron()
-    // {
-    // this->inputLayer = nullptr;
-    // this->delta = 0.0;
-    // };
-    explicit Neuron(Layer *inputLayer) { this->inputLayer = inputLayer; };
-    ~Neuron(){};
-
-    void recalculate() override;
-
-    void backpropagate(nn_num_t error, nn_num_t alpha);
-};
-
-class Logistic : public Neuron
-{
-public:
-    explicit Logistic(Layer *inputLayer) : Neuron(inputLayer){};
-    nn_num_t activation() override { return 1.0 / (1.0 + exp(-1.0 * this->value_)); };
-    nn_num_t activationDeriv() override
-    {
-        nn_num_t a = this->activation();
-        return a * (1.0 - a);
-    };
-};
-
-class Perceptron : public Neuron
-{
-public:
-    explicit Perceptron(Layer *inputLayer) : Neuron(inputLayer){};
-    nn_num_t activation() override { return (this->value_ > 0) ? 1.0 : 0.0; };
-    nn_num_t activationDeriv() override
-    {
-        nn_num_t a = 0.001 / (0.001 + exp(-100.0 * this->value_));
-        return a * (1.0 - a);
-    };
-};
-
-class Linear : public Neuron
-{
-public:
-    explicit Linear(Layer *inputLayer) : Neuron(inputLayer){};
-    nn_num_t activation() override { return this->value_; };
-    nn_num_t activationDeriv() override { return 1.0; };
-};
-
-class BiasNeuron : public Unit
-{
-public:
-    explicit BiasNeuron() : Unit() { value_ = 1.0; };
-    virtual nn_num_t activation() override { return value_; };
-    virtual nn_num_t activationDeriv() override { return 0.0; };
-    void recalculate() override{};
-};
-
-class NeuralNet;
-class Layer
-{
-    friend class NeuronLayer;
-    friend class InputLayer;
-    friend class OutputLayer;
-
-private:
-    std::size_t index_;
-    std::vector<Unit *> units;
-    NeuralNet *myNet;
-
-public:
-    Unit &operator[](size_t index)
-    {
-        return *this->units.at(index);
-    };
-
-    Layer(NeuralNet *myNet_, bool addBias);
-    ~Layer()
-    {
-        for (auto u : this->units)
-            delete u;
-    };
-
-    void AddUnit(Unit *u);
-
-    void RemoveUnit(size_t index);
-
-    std::size_t size() { return this->units.size(); };
-
-    std::size_t index() { return this->index_; };
-
-    void setIndex(size_t i) { this->index_ = i; };
-
-    std::vector<Unit *>::iterator begin() { return this->units.begin(); };
-
-    std::vector<Unit *>::iterator end() { return this->units.end(); };
-};
-
-class NeuronLayer : public Layer
-{
-public:
-    explicit NeuronLayer(NeuralNet *myNet_, bool addBias) : Layer(myNet_, addBias){};
-
-    Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
-
-    void setInputLayer(Layer *l)
-    {
-        for (auto u = this->begin(); u != this->end(); ++u)
-        {
-            Neuron *n = static_cast<Neuron *>(*u);
-            n->setInputLayer(l);
-        };
-    }
-
-};
-
-class InputLayer : public Layer
-{
-public:
-    explicit InputLayer(NeuralNet *myNet_) : Layer(myNet_, false){};
-
-    Input &operator[](int index) { return *static_cast<Input *>(this->units.at(index)); };
-};
-
-class OutputLayer : public NeuronLayer
-{
-private:
-public:
-    explicit OutputLayer(NeuralNet *myNet_) : NeuronLayer(myNet_, false){};
-
-    Neuron &operator[](int index) { return *static_cast<Neuron *>(this->units.at(index)); };
-
-};
 
 class NeuralNet
 {
@@ -252,8 +63,8 @@ public:
             delete this->layers[i];
         }
     }
-    std::size_t size() { return this->layers.size(); };
-    std::size_t size(int index) { return (*this)[index]->size(); };
+    size_t size() { return this->layers.size(); };
+    size_t size(int index) { return (*this)[index]->size(); };
 
     void AddLayer(size_t size, enum neuronTypes t);
 
@@ -273,9 +84,9 @@ public:
         this->UpdateWeights(learningRate);
     };
 
-    void dump();
+    void Dump();
 
-    void setInput(const std::vector<nn_num_t> &values);
+    void SetInput(const std::vector<nn_num_t> &values);
 
     const nn_num_t GetWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to)
     {
@@ -306,7 +117,7 @@ public:
             exit(1);
         }
         Layer &tl = *(*this)[to.first];
-        tl[to.second].changeconnectionweight(from.second, delta);
+        tl[to.second].ChangeConnectionWeight(from.second, delta);
         // return tl[to.second].GetConnectionWeights()[from.second];
     }
 
@@ -323,7 +134,7 @@ public:
             exit(1);
         }
         Layer &tl = *(*this)[to.first];
-        tl[to.second].setconnectionweight(from.second, w);
+        tl[to.second].SetConnectionWeight(from.second, w);
         // return tl[to.second].GetConnectionWeights()[from.second];
     }
 
@@ -370,3 +181,5 @@ public:
 
     void AddInput() { this->layers.front()->AddUnit(new Input()); };
 };
+
+#endif

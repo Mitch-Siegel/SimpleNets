@@ -7,7 +7,7 @@ int main()
     NeuralNet n(2);
     // n.AddLayer(2, NeuralNet::linear);
     n.ConfigureOutput(1, NeuralNet::perceptron);
-    n.dump();
+    n.Dump();
     printf("\n\n\n\n\n");
 
     for (int i = 0; i < 120; i++)
@@ -16,7 +16,7 @@ int main()
         {
             for (int b = 0; b < 2; b++)
             {
-                n.setInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
+                n.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
                 bool result = a & b;
                 printf("Input %d,%d: output %f - expected %d - %s\n\n",
                        a, b,
@@ -38,7 +38,7 @@ int main()
             n.RemoveNeuron({1, 2});
         }
     }
-    n.dump();
+    n.Dump();
     printf("\n\n\n\n");
     // n.AddLayer(1, NeuralNet::perceptron);
 
@@ -46,7 +46,7 @@ int main()
     {
         for (int b = 0; b < 2; b++)
         {
-            n.setInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
+            n.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
             printf("Input %d,%d: output %f - expected %d - %s\n",
                    a, b,
                    n.Output(), a & b,
@@ -55,7 +55,7 @@ int main()
     }
 
     printf("\n\n");
-    n.dump();
+    n.Dump();
 
     for (size_t i = 1; i < n.size(); i++)
     {
