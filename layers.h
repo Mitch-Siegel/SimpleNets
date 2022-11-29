@@ -7,28 +7,28 @@
 
 namespace SimpleNets
 {
-class NeuralNet;
+    class NeuralNet;
 
-class Layer
-{
-private:
-    size_t index_;
-    std::vector<Unit *> units;
-    NeuralNet *myNet;
+    class Layer
+    {
+    private:
+        size_t index_;
+        std::vector<Unit *> units;
+        NeuralNet *myNet;
 
-public:
-    Unit &operator[](size_t index);
+    public:
+        Unit &operator[](size_t index);
 
-    Layer(NeuralNet *myNet_, bool addBias);
-    ~Layer();
+        Layer(NeuralNet *myNet_, bool addBias);
+        ~Layer();
 
-    void AddUnit(Unit *u);
-    
-    size_t size();
-    size_t Index();
+        void AddUnit(Unit *u);
 
-    std::vector<Unit *>::iterator begin();
-    std::vector<Unit *>::iterator end();
-};
-} // 
+        size_t size();
+        size_t Index();
+
+        std::vector<Unit *>::iterator begin();
+        std::vector<Unit *>::iterator end();
+    };
+} // namespace SimpleNets
 #endif

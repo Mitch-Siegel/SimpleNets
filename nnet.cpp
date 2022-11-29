@@ -8,16 +8,16 @@ namespace SimpleNets
 
     size_t NeuralNet::AcquireNewUnitID()
     {
-        if (this->units.size() == 0 || (this->units.size() == (this->units.rbegin()->second->Id() + 1)))
+        if (this->units_.size() == 0 || (this->units_.size() == (this->units_.rbegin()->second->Id() + 1)))
         {
-            return this->units.size();
+            return this->units_.size();
         }
         else
         {
-            size_t s = this->units.size();
+            size_t s = this->units_.size();
             for (size_t i = 0; i < s; i++)
             {
-                if (this->units.count(i) == 0)
+                if (this->units_.count(i) == 0)
                 {
                     return i;
                 }
@@ -52,12 +52,17 @@ namespace SimpleNets
             u = new Units::Linear(id);
             break;
         }
-        this->units[id] = u;
+        this->units_[id] = u;
         return u;
     }
     Unit *NeuralNet::GenerateUnitFromType(neuronTypes t)
     {
         return this->GenerateUnitFromType(t, this->AcquireNewUnitID());
+    }
+
+    const std::map<size_t, Unit *> &NeuralNet::units()
+    {
+        return this->units_;
     }
 
     Layer *NeuralNet::operator[](int index)
@@ -88,7 +93,7 @@ namespace SimpleNets
                 printf("Neuron %2lu (type %10s): raw: %f, delta %f, error %f\n\tactivation: %f\n\tweights:", u.Id(), GetNeuronTypeName(u.type()), u.Raw(), u.delta, u.error, u.Activation());
                 for (auto connection : u.GetConnections())
                 {
-                    printf("%lu->this % 0.02f, ", connection.from.u->Id(), connection.weight);
+                    printf("%lu->this % 0.07f, ", connection.from.u->Id(), connection.weight);
                 }
                 printf("\n");
             }
@@ -114,9 +119,23 @@ namespace SimpleNets
         }
     }
 
+    void NeuralNet::AddConnection(size_t fromId, size_t toId, nn_num_t w)
+    {
+        if(this->units_.count(fromId) == 0)
+        {
+            printf("Error generating connection from %lu->%lu - source unit doesn't exist!\n", fromId, toId);
+        }
+
+        if(this->units_.count(toId) == 0)
+        {
+            printf("Error generating connection from %lu->%lu - destination unit doesn't exist!\n", fromId, toId);
+        }
+        this->units_[toId]->AddConnection(this->units_[fromId], w);
+    }
+
     const nn_num_t NeuralNet::GetWeight(size_t fromId, size_t toId)
     {
-        Unit *from = this->units[fromId];
+        Unit *from = this->units_[fromId];
         return from->GetConnections().find(Connection(toId))->weight;
     }
 
