@@ -1,49 +1,52 @@
 #include "layers.h"
 #include "nnet.h"
 
-Unit &Layer::operator[](size_t index)
+namespace SimpleNets
 {
-    return *this->units.at(index);
-};
-
-Layer::Layer(NeuralNet *myNet_, bool addBias)
-{
-    this->myNet = myNet_;
-    this->index_ = myNet_->size();
-
-    if (addBias)
+    Unit &Layer::operator[](size_t index)
     {
-        this->AddUnit(myNet_->GenerateUnitFromType(bias));
+        return *this->units.at(index);
+    };
+
+    Layer::Layer(NeuralNet *myNet_, bool addBias)
+    {
+        this->myNet = myNet_;
+        this->index_ = myNet_->size();
+
+        if (addBias)
+        {
+            this->AddUnit(myNet_->GenerateUnitFromType(bias));
+        }
     }
-}
 
-Layer::~Layer()
-{
-    for (auto u : this->units)
-        delete u;
-}
+    Layer::~Layer()
+    {
+        for (auto u : this->units)
+            delete u;
+    }
 
-void Layer::AddUnit(Unit *u)
-{
-    this->units.push_back(u);
-}
+    void Layer::AddUnit(Unit *u)
+    {
+        this->units.push_back(u);
+    }
 
-size_t Layer::size()
-{
-    return this->units.size();
-}
+    size_t Layer::size()
+    {
+        return this->units.size();
+    }
 
-size_t Layer::Index()
-{
-    return this->index_;
-}
+    size_t Layer::Index()
+    {
+        return this->index_;
+    }
 
-std::vector<Unit *>::iterator Layer::begin()
-{
-    return this->units.begin();
-}
+    std::vector<Unit *>::iterator Layer::begin()
+    {
+        return this->units.begin();
+    }
 
-std::vector<Unit *>::iterator Layer::end()
-{
-    return this->units.end();
-}
+    std::vector<Unit *>::iterator Layer::end()
+    {
+        return this->units.end();
+    }
+} // namespace SimpleNets

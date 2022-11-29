@@ -4,7 +4,7 @@
 int main()
 {
     printf("Hello, world!\n");
-    FeedForwardNeuralNet n(2, {}, {1, perceptron});
+    SimpleNets::FeedForwardNeuralNet n(2, {}, {1, SimpleNets::perceptron});
     printf("\n\n");
 
     for (int i = 0; i < 5; i++)

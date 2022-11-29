@@ -1,148 +1,127 @@
 #ifndef __UNITS_H_
 #define __UNITS_H_
 
-// #include <vector>
 #include <set>
-#include <math.h>
-#include <stdint.h>
 
-typedef float nn_num_t;
+#include "connection.h"
 
-enum neuronTypes
+namespace SimpleNets
 {
-    input,
-    bias,
-    logistic,
-    perceptron,
-    linear,
-};
 
-const char *GetNeuronTypeName(neuronTypes t);
-
-class Layer;
-class Unit;
-// const size_t Unit::Id();
-
-class Connection
-{
-private:
-    bool idOnly = false;
-
-public:
-    union
+    enum neuronTypes
     {
-        Unit *u;
-        size_t id;
-    } from;
+        input,
+        bias,
+        logistic,
+        perceptron,
+        linear,
+    };
 
-    nn_num_t weight;
+    const char *GetNeuronTypeName(neuronTypes t);
 
-    Connection(Unit *u, nn_num_t weight);
-    explicit Connection(Unit *u);
-    explicit Connection(size_t id);
+    class Layer;
 
-    bool operator==(const Connection &b);
+    /*
+     * A unit represents a node in the network
+     * connections flow from left to right (lower to higher layer indices)
+     */
+    class Unit
+    {
 
-    bool operator<(const Connection &b) const;
-};
+    private:
+        size_t id_;
+        neuronTypes type_;
 
-/*
- * A unit represents a node in the network
- * connections flow from left to right (lower to higher layer indices)
- */
-class Unit
-{
-    friend class Layer;
+    protected:
+        // std::vector<nn_num_t> connectionWeights;
+        std::set<Connection> connections;
+        nn_num_t value_ = 0.0;
 
-private:
-    size_t id_;
-    neuronTypes type_;
+    public:
+        nn_num_t delta = 0.0;
+        nn_num_t error = 0.0;
+        Unit(size_t id, neuronTypes type);
+        virtual ~Unit() = 0;
+        const size_t Id();
+        const neuronTypes type();
+        nn_num_t Raw();
+        virtual nn_num_t Activation() = 0;
+        virtual nn_num_t ActivationDeriv() = 0;
+        virtual void CalculateValue() = 0;
+        void ChangeConnectionWeight(Unit *from, nn_num_t delta);
+        void SetConnectionWeight(Unit *from, nn_num_t w);
 
-protected:
-    // std::vector<nn_num_t> connectionWeights;
-    std::set<Connection> connections;
-    nn_num_t value_ = 0.0;
+        const std::set<Connection> &GetConnections();
+        void AddConnection(Unit *u, nn_num_t w);
+        void RemoveConnection(Unit *u);
+        void Disconnect();
+    };
 
-public:
-    nn_num_t delta = 0.0;
-    nn_num_t error = 0.0;
-    Unit(size_t id, neuronTypes type);
-    virtual ~Unit() = 0;
-    const size_t Id();
-    const neuronTypes type();
-    nn_num_t Raw();
-    virtual nn_num_t Activation() = 0;
-    virtual nn_num_t ActivationDeriv() = 0;
-    virtual void CalculateValue() = 0;
-    void ChangeConnectionWeight(Unit *from, nn_num_t delta);
-    void SetConnectionWeight(Unit *from, nn_num_t w);
+    namespace Units
+    {
+        class Input : public Unit
+        {
+        public:
+            explicit Input(size_t id);
+            ~Input(){};
 
-    const std::set<Connection> &GetConnections();
-    void AddConnection(Unit *u, nn_num_t w);
-    void RemoveConnection(Unit *u);
-    void Disconnect();
-};
+            nn_num_t Activation() override;
+            nn_num_t ActivationDeriv() override;
+            void CalculateValue() override;
+            void SetValue(nn_num_t newValue);
+        };
 
-class Input : public Unit
-{
-public:
-    explicit Input(size_t id);
-    ~Input(){};
+        class Neuron : public Unit
+        {
+            friend class Layer;
+            friend class NeuronLayer;
+            friend class OutputLayer;
 
-    nn_num_t Activation() override;
-    nn_num_t ActivationDeriv() override;
-    void CalculateValue() override;
-    void SetValue(nn_num_t newValue);
-};
+        private:
+            void Changeconnectionweight(int index, nn_num_t delta);
 
-class Neuron : public Unit
-{
-    friend class Layer;
-    friend class NeuronLayer;
-    friend class OutputLayer;
+        public:
+            explicit Neuron(size_t id, neuronTypes type);
+            ~Neuron();
 
-private:
-    void Changeconnectionweight(int index, nn_num_t delta);
+            void CalculateValue() override;
+            void Backpropagate(nn_num_t error, nn_num_t alpha);
+        };
 
-public:
-    explicit Neuron(size_t id, neuronTypes type);
-    ~Neuron();
+        class Logistic : public Neuron
+        {
+        public:
+            explicit Logistic(size_t id);
+            nn_num_t Activation() override;
+            nn_num_t ActivationDeriv() override;
+        };
 
-    void CalculateValue() override;
-    void Backpropagate(nn_num_t error, nn_num_t alpha);
-};
+        class Perceptron : public Neuron
+        {
+        public:
+            explicit Perceptron(size_t id);
+            nn_num_t Activation() override;
+            nn_num_t ActivationDeriv() override;
+        };
 
-class Logistic : public Neuron
-{
-public:
-    explicit Logistic(size_t id);
-    nn_num_t Activation() override;
-    nn_num_t ActivationDeriv() override;
-};
+        class Linear : public Neuron
+        {
+        public:
+            explicit Linear(size_t id);
+            nn_num_t Activation() override;
+            nn_num_t ActivationDeriv() override;
+        };
 
-class Perceptron : public Neuron
-{
-public:
-    explicit Perceptron(size_t id);
-    nn_num_t Activation() override;
-    nn_num_t ActivationDeriv() override;
-};
+        class BiasNeuron : public Unit
+        {
+        public:
+            explicit BiasNeuron(size_t id);
+            nn_num_t Activation() override;
+            nn_num_t ActivationDeriv() override;
+            void CalculateValue() override;
+        };
+    } // namespace Units
 
-class Linear : public Neuron
-{
-public:
-    explicit Linear(size_t id);
-    nn_num_t Activation() override;
-    nn_num_t ActivationDeriv() override;
-};
-
-class BiasNeuron : public Unit
-{
-public:
-    explicit BiasNeuron(size_t id);
-    nn_num_t Activation() override;
-    nn_num_t ActivationDeriv() override;
-    void CalculateValue() override;
-};
+} // namespace SimpleNets
 
 #endif

@@ -5,6 +5,8 @@
 
 #include "units.h"
 
+namespace SimpleNets
+{
 class NeuralNet;
 
 class Layer
@@ -28,5 +30,5 @@ public:
     std::vector<Unit *>::iterator begin();
     std::vector<Unit *>::iterator end();
 };
-
+} // 
 #endif

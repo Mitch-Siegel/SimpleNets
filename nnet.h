@@ -7,43 +7,43 @@
 
 #include "layers.h"
 
-class Unit;
-class Layer;
-class InputLayer;
-class NeuronLayer;
-class OutputLayer;
-
-class NeuralNet
+namespace SimpleNets
 {
-    friend class Layer;
-private:
-    std::map<size_t, Unit *> units;
+    class Unit;
+    class Layer;
 
-protected:
-    size_t AcquireNewUnitID();
+    class NeuralNet
+    {
+        friend class Layer;
 
-    Unit *GenerateUnitFromType(neuronTypes t, size_t unitID);
-    Unit *GenerateUnitFromType(neuronTypes t);
+    private:
+        std::map<size_t, Unit *> units;
 
-    std::vector<Layer *> layers;
+    protected:
+        size_t AcquireNewUnitID();
 
-public:
-    Layer *operator[](int index);
-    size_t size();
-    size_t size(int index);
-    virtual nn_num_t Output() = 0;
+        Unit *GenerateUnitFromType(neuronTypes t, size_t unitID);
+        Unit *GenerateUnitFromType(neuronTypes t);
 
-    void Dump();
+        std::vector<Layer *> layers;
 
-    void SetInput(const std::vector<nn_num_t> &values);
+    public:
+        Layer *operator[](int index);
+        size_t size();
+        size_t size(int index);
+        virtual nn_num_t Output() = 0;
 
-    const nn_num_t GetWeight(size_t fromId, size_t toId);
-    void ChangeWeight(size_t fromId, size_t toId, nn_num_t delta);
-    void SetWeight(size_t fromId, size_t toId, nn_num_t w);
+        void Dump();
 
-    // void AddNeuron(size_t layer, neuronTypes t);
-    // void RemoveNeuron(std::pair<size_t, size_t> index);
-};
+        void SetInput(const std::vector<nn_num_t> &values);
 
+        const nn_num_t GetWeight(size_t fromId, size_t toId);
+        void ChangeWeight(size_t fromId, size_t toId, nn_num_t delta);
+        void SetWeight(size_t fromId, size_t toId, nn_num_t w);
+
+        // void AddNeuron(size_t layer, neuronTypes t);
+        // void RemoveNeuron(std::pair<size_t, size_t> index);
+    };
+} // namespace SimpleNets
 
 #endif
