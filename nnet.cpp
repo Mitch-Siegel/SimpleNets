@@ -29,6 +29,11 @@ namespace SimpleNets
 
     Unit *NeuralNet::GenerateUnitFromType(neuronTypes t, size_t id)
     {
+        if(this->units_.count(id))
+        {
+            printf("Request to add unit with id %lu to net already containing that ID!\n", id);
+            exit(1);
+        }
         Unit *u;
         switch (t)
         {

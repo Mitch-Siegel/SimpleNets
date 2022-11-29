@@ -42,12 +42,7 @@ namespace SimpleNets
         Layer *ol = new Layer(this, false);
         for (size_t j = 0; j < outputFormat.first; j++)
         {
-            Unit *u = this->GenerateUnitFromType(outputFormat.second);
-            for (auto k = this->layers.back()->begin(); k != this->layers.back()->end(); ++k)
-            {
-                u->AddConnection(*k, 0.05);
-            }
-            ol->AddUnit(u);
+            ol->AddUnit(this->GenerateUnitFromType(outputFormat.second));
         }
         this->layers.push_back(ol);
     }
@@ -92,6 +87,18 @@ namespace SimpleNets
         }
     }
 
+    void DAGNetwork::Learn(const std::vector<nn_num_t> &expectedOutput, nn_num_t learningRate)
+    {
+        if (expectedOutput.size() != this->layers.back()->size())
+        {
+            printf("Provided expected output array of length %lu, expected size %lu\n",
+                   expectedOutput.size(), this->layers.back()->size());
+            exit(1);
+        }
+        this->BackPropagate(expectedOutput);
+        this->UpdateWeights(learningRate);
+    }
+
     nn_num_t DAGNetwork::Output()
     {
         this->Recalculate();
@@ -127,60 +134,42 @@ namespace SimpleNets
         }
         // delta of each output j = activation derivative(j) * (expected(j) - actual(j))
         Layer &ol = *this->layers.back();
+        std::set<Unit *> visited;
+        std::queue<Unit *> toPropagate;
         for (size_t j = 0; j < ol.size(); j++)
         {
             ol[j].delta = ol[j].ActivationDeriv() * (expectedOutput[j] - ol[j].Activation());
-        }
+            toPropagate.push(&ol[j]);
 
-        std::queue<Unit *> toPropagate;
-        for (auto u = this->layers.back()->begin(); u != this->layers.back()->end(); ++u)
-        {
-            toPropagate.push((*u));
         }
         while (toPropagate.size() > 0)
         {
-            Unit *u = toPropagate.front();
-            u->delta *= u->ActivationDeriv();
+            Unit *j = toPropagate.front();
             toPropagate.pop();
-            for (auto c : u->GetConnections())
+            if (visited.count(j) == 0)
             {
-                c.from.u->delta += c.weight * u->delta;
-                toPropagate.push(c.from.u);
-            }
-        }
-        /*
-        // for all other layers, delta of a node i in the layer is:
-        // activation derivative(i) * sum for all j(weight of connection from i to j * delta(j))
-        for (size_t li = this->layers.size() - 1; li > 0; --li)
-        {
-            Layer &l = *this->layers[li - 1];
-            Layer &nl = *this->layers[li];
-            for (size_t i = 0; i < l.size(); i++)
-            {
-                nn_num_t sum = 0.0;
-                for (size_t j = 0; j < nl.size(); j++)
+                visited.insert(j);
+                for (auto c : j->GetConnections())
                 {
-                    std::set<Connection> connections = nl[j].GetConnections();
-                    sum += (*connections.find(Connection(&l[i]))).weight * nl[j].delta;
+                    Unit *i = c.from.u;
+                    printf("use %lu->%lu connection to build %lu's delta\n", i->Id(), j->Id(), i->Id());
+                    i->delta += (c.weight * j->delta) * i->ActivationDeriv();
+                    toPropagate.push(i);
                 }
-                l[i].delta = sum * l[i].ActivationDeriv();
             }
         }
-        */
     }
 
     void DAGNetwork::UpdateWeights(nn_num_t learningRate)
     {
-        for (size_t li = this->size() - 1; li > 0; li--)
+        for(auto u : this->units())
         {
-            Layer &l = *(*this)[li];
-            Layer &pl = *(*this)[li - 1];
-            for (auto j = l.begin(); j != l.end(); ++j)
+            Unit *j = u.second;
+            for(auto v : j->GetConnections())
             {
-                for (auto i = pl.begin(); i != pl.end(); ++i)
-                {
-                    (*j)->ChangeConnectionWeight(*i, learningRate * (*i)->Activation() * (*j)->delta);
-                }
+                Unit *i = v.from.u;
+                printf("update %lu->%lu weight\n", i->Id(), j->Id());
+                j->ChangeConnectionWeight(i, learningRate * i->Activation() * j->delta);
             }
         }
     }
