@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <vector>
+#include <map>
 
 #include "layers.h"
 
@@ -15,17 +16,14 @@ class OutputLayer;
 class NeuralNet
 {
     friend class Layer;
-
-public:
-    enum neuronTypes
-    {
-        logistic,
-        perceptron,
-        linear,
-    };
+private:
+    std::map<size_t, Unit *> units;
 
 protected:
-    static Unit *GenerateUnitFromType(neuronTypes t, Layer *inputLayer);
+    size_t AcquireNewUnitID();
+
+    Unit *GenerateUnitFromType(neuronTypes t, size_t unitID);
+    Unit *GenerateUnitFromType(neuronTypes t);
 
     std::vector<Layer *> layers;
 
@@ -39,14 +37,12 @@ public:
 
     void SetInput(const std::vector<nn_num_t> &values);
 
-    const nn_num_t GetWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to);
-    void ChangeWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to, nn_num_t delta);
-    void SetWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to, nn_num_t w);
+    const nn_num_t GetWeight(size_t fromId, size_t toId);
+    void ChangeWeight(size_t fromId, size_t toId, nn_num_t delta);
+    void SetWeight(size_t fromId, size_t toId, nn_num_t w);
 
-    void AddNeuron(size_t layer, neuronTypes t);
-    void RemoveNeuron(std::pair<size_t, size_t> index);
-
-    void AddInput();
+    // void AddNeuron(size_t layer, neuronTypes t);
+    // void RemoveNeuron(std::pair<size_t, size_t> index);
 };
 
 

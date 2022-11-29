@@ -1,12 +1,50 @@
 #ifndef __UNITS_H_
 #define __UNITS_H_
 
-#include <vector>
+// #include <vector>
+#include <set>
 #include <math.h>
+#include <stdint.h>
 
 typedef float nn_num_t;
 
+enum neuronTypes
+{
+    input,
+    bias,
+    logistic,
+    perceptron,
+    linear,
+};
+
+const char *GetNeuronTypeName(neuronTypes t);
+
 class Layer;
+class Unit;
+// const size_t Unit::Id();
+
+class Connection
+{
+private:
+    bool idOnly = false;
+
+public:
+    union
+    {
+        Unit *u;
+        size_t id;
+    } from;
+
+    nn_num_t weight;
+
+    Connection(Unit *u, nn_num_t weight);
+    explicit Connection(Unit *u);
+    explicit Connection(size_t id);
+
+    bool operator==(const Connection &b);
+
+    bool operator<(const Connection &b) const;
+};
 
 /*
  * A unit represents a node in the network
@@ -16,37 +54,45 @@ class Unit
 {
     friend class Layer;
 
+private:
+    size_t id_;
+    neuronTypes type_;
+
 protected:
-    std::vector<nn_num_t> connectionWeights;
+    // std::vector<nn_num_t> connectionWeights;
+    std::set<Connection> connections;
     nn_num_t value_ = 0.0;
 
 public:
     nn_num_t delta = 0.0;
     nn_num_t error = 0.0;
+    Unit(size_t id, neuronTypes type);
     virtual ~Unit() = 0;
+    const size_t Id();
+    const neuronTypes type();
     nn_num_t Raw();
     virtual nn_num_t Activation() = 0;
     virtual nn_num_t ActivationDeriv() = 0;
-    virtual void Recalculate() = 0;
-    void ChangeConnectionWeight(int index, nn_num_t delta);
-    void SetConnectionWeight(int index, nn_num_t w);
-    nn_num_t operator[](int index);
-    const std::vector<nn_num_t> &GetConnectionWeights();
-    void AddConnection(nn_num_t weight);
-    void RemoveConnection(size_t index);
+    virtual void CalculateValue() = 0;
+    void ChangeConnectionWeight(Unit *from, nn_num_t delta);
+    void SetConnectionWeight(Unit *from, nn_num_t w);
+
+    const std::set<Connection> &GetConnections();
+    void AddConnection(Unit *u, nn_num_t w);
+    void RemoveConnection(Unit *u);
+    void Disconnect();
 };
 
 class Input : public Unit
 {
 public:
-    explicit Input() { value_ = 0.0; };
+    explicit Input(size_t id);
     ~Input(){};
 
-    nn_num_t Activation() override { return value_; };
-    nn_num_t ActivationDeriv() override { return 0.0; };
-    void Recalculate() override{};
-    void SetValue(nn_num_t newValue) { this->value_ = newValue; };
-    void Backpropagate(nn_num_t error, nn_num_t alpha){};
+    nn_num_t Activation() override;
+    nn_num_t ActivationDeriv() override;
+    void CalculateValue() override;
+    void SetValue(nn_num_t newValue);
 };
 
 class Neuron : public Unit
@@ -56,22 +102,20 @@ class Neuron : public Unit
     friend class OutputLayer;
 
 private:
-    Layer *inputLayer;
     void Changeconnectionweight(int index, nn_num_t delta);
-    void SetInputLayer(Layer *newInputLayer);
 
 public:
-    explicit Neuron(Layer *inputLayer);
+    explicit Neuron(size_t id, neuronTypes type);
     ~Neuron();
 
-    void Recalculate() override;
+    void CalculateValue() override;
     void Backpropagate(nn_num_t error, nn_num_t alpha);
 };
 
 class Logistic : public Neuron
 {
 public:
-    explicit Logistic(Layer *inputLayer);
+    explicit Logistic(size_t id);
     nn_num_t Activation() override;
     nn_num_t ActivationDeriv() override;
 };
@@ -79,7 +123,7 @@ public:
 class Perceptron : public Neuron
 {
 public:
-    explicit Perceptron(Layer *inputLayer);
+    explicit Perceptron(size_t id);
     nn_num_t Activation() override;
     nn_num_t ActivationDeriv() override;
 };
@@ -87,7 +131,7 @@ public:
 class Linear : public Neuron
 {
 public:
-    explicit Linear(Layer *inputLayer);
+    explicit Linear(size_t id);
     nn_num_t Activation() override;
     nn_num_t ActivationDeriv() override;
 };
@@ -95,10 +139,10 @@ public:
 class BiasNeuron : public Unit
 {
 public:
-    explicit BiasNeuron();
+    explicit BiasNeuron(size_t id);
     nn_num_t Activation() override;
     nn_num_t ActivationDeriv() override;
-    void Recalculate() override;
+    void CalculateValue() override;
 };
 
 #endif
