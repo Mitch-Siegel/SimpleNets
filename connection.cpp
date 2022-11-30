@@ -3,41 +3,25 @@
 
 namespace SimpleNets
 {
-    Connection::Connection(Unit *u, nn_num_t weight)
+    Connection::Connection(Unit *from, Unit *to, nn_num_t weight)
     {
-        this->from.u = u;
+        this->from = from;
+        this->to = to;
         this->weight = weight;
-        this->idOnly = false;
-    }
-
-    Connection::Connection(Unit *u)
-    {
-        this->from.u = u;
-        this->weight = 0.0;
-        this->idOnly = false;
-    }
-
-    Connection::Connection(size_t id)
-    {
-        this->from.id = id;
-        this->weight = 0.0;
-        this->idOnly = true;
     }
 
     bool Connection::operator==(const Connection &b)
     {
-        return (this->from.u == b.from.u) || (this->from.id == b.from.id);
+        return (this->from == b.from) && (this->to = b.to);
     }
 
-    bool Connection::operator<(const Connection &b) const
+    // bool Connection::operator<(const Connection &b) const
+    // {
+        // return (this->to->Id() + this->from->Id()) < (b.to->Id() + b.from->Id());
+    // }
+
+    bool Connection::operator()(const Connection *b)
     {
-        if (this->idOnly)
-        {
-            return this->from.id < b.from.id;
-        }
-        else
-        {
-            return this->from.u->Id() < b.from.u->Id();
-        }
+        return this->operator==(*b);
     }
 }

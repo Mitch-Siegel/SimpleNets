@@ -29,14 +29,15 @@ namespace SimpleNets
      */
     class Unit
     {
-    // baseline read-only identifying information about the unit
+        // baseline read-only identifying information about the unit
     private:
         size_t id_;
         neuronTypes type_;
 
     protected:
         // list of all connections starting from a different unit and going to this unit
-        std::set<Connection> connections;
+        std::set<Connection *> inboundConnections_;
+        std::set<Connection *> outboundConnections_;
 
         // internal value of the unit, calculated based on what type it is
         nn_num_t value_ = 0.0;
@@ -48,11 +49,11 @@ namespace SimpleNets
 
         Unit(size_t id, neuronTypes type);
         virtual ~Unit() = 0;
-        
+
         // getters for read-only info
         const size_t Id();
         const neuronTypes type();
-        
+
         // returns the raw value of the unit
         nn_num_t Raw();
         // returns the output of the unit based on its activation function
@@ -64,22 +65,22 @@ namespace SimpleNets
         // updates the value of the unit based on the current values of its connections
         virtual void CalculateValue() = 0;
 
-        // alter the weight of a connection from a given unit to this unit
-        void ChangeConnectionWeight(Unit *from, nn_num_t delta);
-        void SetConnectionWeight(Unit *from, nn_num_t w);
+        // alter the weight of a connection - either "from" or "to" must be nullptr to refer to "this"
+        void ChangeConnectionWeight(Unit *from, Unit *to, nn_num_t delta);
+        void SetConnectionWeight(Unit *from, Unit *to, nn_num_t w);
 
-        // get all connections to this unit
-        const std::set<Connection> &GetConnections();
-        
+        // get all outbound connections from this unit
+        const std::set<Connection *> &OutboundConnections();
 
-        // add a connection from a given unit to this unit with weight w
-        void AddConnection(Unit *u, nn_num_t w);
+        // get all inbound connections to this unit
+        const std::set<Connection *> &InboundConnections();
 
-        // remove the connection from a given unit to this unit
-        void RemoveConnection(Unit *u);
+        // add a connection to this unit's list of references, return true if error
+        void AddConnection(Connection *c);
 
-        // remove all connection from any units to this unit
-        void Disconnect();
+        // remove a connection from this unit's list of references, return true if error
+        void RemoveConnection(Connection *c);
+
     };
 
     namespace Units

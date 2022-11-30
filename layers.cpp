@@ -21,8 +21,6 @@ namespace SimpleNets
 
     Layer::~Layer()
     {
-        for (auto u : this->units)
-            delete u;
     }
 
     void Layer::AddUnit(Unit *u)

@@ -6,9 +6,13 @@ namespace SimpleNets
     {
 
     private:
+        bool finalized;
         void BackPropagate(const std::vector<nn_num_t> &expectedOutput);
         void UpdateWeights(nn_num_t learningRate);
         void ForwardPropagate();
+
+        bool OnConnectionAdded(Connection *c);
+        bool OnConnectionRemoved(Connection *c);
 
     public:
         FeedForwardNeuralNet(size_t nInputs,

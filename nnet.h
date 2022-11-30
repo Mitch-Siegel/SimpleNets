@@ -18,6 +18,7 @@ namespace SimpleNets
 
     private:
         std::map<size_t, Unit *> units_;
+        std::map<std::pair<size_t, size_t>, Connection*> connections_;
 
     protected:
         // generate a unique ID for a new unit
@@ -29,11 +30,20 @@ namespace SimpleNets
         Unit *GenerateUnitFromType(neuronTypes t);
 
         const std::map<size_t, Unit *> &units();
-        std::vector<Layer *> layers;
+        std::vector<Layer> layers;
+
+        virtual bool OnConnectionAdded(Connection *c) = 0;
+        virtual bool OnConnectionRemoved(Connection *c) = 0;
+
+        // unchecked removeconnection method for internal use
+        void RemoveConnection(Connection *c);
 
     public:
+
+        ~NeuralNet();
+
         // return the pointer to a given layer by index
-        Layer *operator[](int index);
+        Layer &operator[](int index);
 
         // return the number of layers in the network
         size_t size();
@@ -53,7 +63,17 @@ namespace SimpleNets
         void SetInput(const std::vector<nn_num_t> &values);
 
         // add a connection from a given ID to a given ID with the given weight
-        void AddConnection(size_t fromId, size_t toId, nn_num_t w);
+        bool AddConnection(Unit *from, Unit *to, nn_num_t w);
+
+        // add a connection from a given ID to a given ID with the given weight
+        bool AddConnection(size_t fromId, size_t toId, nn_num_t w);
+
+        // remove the connection from a given ID to a given ID
+        bool RemoveConnection(Unit *from, Unit *to);
+
+        // remove the connection from a given ID to a given ID
+        bool RemoveConnection(size_t fromId, size_t toId);
+
         
         // get the weight of a connection from a given ID to a given ID
         const nn_num_t GetWeight(size_t fromId, size_t toId);

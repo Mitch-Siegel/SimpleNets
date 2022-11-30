@@ -11,25 +11,21 @@ namespace SimpleNets
 
     class Connection
     {
-    private:
-        bool idOnly = false;
-
     public:
-        union
-        {
-            Unit *u;
-            size_t id;
-        } from;
+        Unit *from;
+        Unit *to;
 
         nn_num_t weight;
 
-        Connection(Unit *u, nn_num_t weight);
-        explicit Connection(Unit *u);
-        explicit Connection(size_t id);
+        Connection(Unit *from, Unit *to, nn_num_t weight);
+        // explicit Connection(Unit *u);
+        // explicit Connection(size_t id);
 
         bool operator==(const Connection &b);
 
-        bool operator<(const Connection &b) const;
+        // bool operator<(const Connection &b) const;
+
+        bool operator()(const Connection *b);
     };
 
 } // namespace SimpleNets

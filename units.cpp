@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "units.h"
 #include "layers.h"
 
@@ -61,53 +63,85 @@ namespace SimpleNets
     {
         return this->value_;
     }
-    void Unit::ChangeConnectionWeight(Unit *from, nn_num_t delta)
+
+    void Unit::ChangeConnectionWeight(Unit *from, Unit *to, nn_num_t delta)
     {
-        auto f = this->connections.find(Connection(from));
-        if (f == this->connections.end())
+        std::set<Connection *>::iterator c;
+        if (from == nullptr)
         {
-            printf("Error - couldn't find connection to change weight of!\n");
+            from = this;
+            c = std::find_if(this->outboundConnections_.begin(), this->outboundConnections_.end(), Connection(from, to, 0.0));
+        }
+        else if (to == nullptr)
+        {
+            to = this;
+            c = std::find_if(this->inboundConnections_.begin(), this->inboundConnections_.end(), Connection(from, to, 0.0));
+        }
+        else
+        {
+            printf("Erroneous call to Unit::ChangeCOnnectionWeight - either 'to' or 'from' must be nullptr to refer to this unit!\n");
             exit(1);
         }
-        Connection newC = *(f);
-        this->connections.erase(f);
-        newC.weight += delta;
-        this->connections.insert(newC);
+
+        (*c)->weight += delta;
     };
 
-    void Unit::SetConnectionWeight(Unit *from, nn_num_t w)
+    void Unit::SetConnectionWeight(Unit *from, Unit *to, nn_num_t w)
     {
-        auto f = this->connections.find(Connection(from));
-        if (f == this->connections.end())
+        std::set<Connection *>::iterator c;
+        if (from == nullptr)
         {
-            printf("Error - couldn't find connection to change weight of!\n");
+            from = this;
+            c = std::find_if(outboundConnections_.begin(), outboundConnections_.end(), Connection(from, to, 0.0));
+        }
+        else if (to == nullptr)
+        {
+            to = this;
+            c = std::find_if(inboundConnections_.begin(), inboundConnections_.end(), Connection(from, to, 0.0));
+        }
+        else
+        {
+            printf("Erroneous call to Unit::SetConnectionWeight - either 'to' or 'from' must be nullptr to refer to this unit!\n");
             exit(1);
         }
-        Connection newC = *(f);
-        this->connections.erase(f);
-        newC.weight = w;
-        this->connections.insert(newC);
+
+        (*c)->weight = w;
     };
 
-    const std::set<Connection> &Unit::GetConnections()
+    const std::set<Connection *> &Unit::OutboundConnections()
     {
-        return this->connections;
+        return this->outboundConnections_;
     };
 
-    void Unit::AddConnection(Unit *u, nn_num_t w)
+    const std::set<Connection *> &Unit::InboundConnections()
     {
-        this->connections.insert(Connection(u, w));
+        return this->inboundConnections_;
     };
 
-    void Unit::RemoveConnection(Unit *u)
+    void Unit::AddConnection(Connection *c)
     {
-        this->connections.erase(Connection(u));
+        if (c->from == this)
+        {
+            this->outboundConnections_.insert(c);
+        }
+        else
+        {
+            this->inboundConnections_.insert(c);
+        }
     };
 
-    void Unit::Disconnect()
+    void Unit::RemoveConnection(Connection *c)
     {
-        this->connections.clear();
-    }
+        if (c->from == this)
+        {
+            this->outboundConnections_.erase(c);
+        }
+        else
+        {
+            this->inboundConnections_.erase(c);
+        }
+    };
+
     namespace Units
     {
         // Neuron
@@ -123,9 +157,9 @@ namespace SimpleNets
         void Neuron::CalculateValue()
         {
             this->value_ = 0.0;
-            for (auto c : this->connections)
+            for (auto c : this->inboundConnections_)
             {
-                this->value_ += c.weight * c.from.u->Activation();
+                this->value_ += c->weight * c->from->Activation();
             }
         }
 
@@ -183,8 +217,7 @@ namespace SimpleNets
 
         nn_num_t Perceptron::ActivationDeriv()
         {
-            nn_num_t a = 1.0 / (1.0 + exp(-1.0 * this->value_));
-            return (a * (1.0 - a));
+            return 1.0001 - pow(abs(this->value_), 0.1);
         }
 
         // Linear

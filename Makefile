@@ -1,5 +1,5 @@
 CC = g++
-FLAGS = -g -Werror -Wall
+FLAGS = -Og -g -Werror -Wall
 programs: nn
 
 
