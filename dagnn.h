@@ -2,6 +2,7 @@
 
 namespace SimpleNets
 {
+    // a network with arbitrary structure, the only rule is that it must be acylclic
     class DAGNetwork : public NeuralNet
     {
 
@@ -13,12 +14,12 @@ namespace SimpleNets
         std::map<size_t, Unit *> postNumbers;
 
         void GeneratePostNumbers();
-        
+
         // returns true if any cycle found, false if no cycle
         // bool CheckForCycle();
 
-        bool OnConnectionAdded(Connection *c);
-        bool OnConnectionRemoved(Connection *c);
+        bool OnConnectionAdded(Connection *c) override;
+        bool OnConnectionRemoved(Connection *c) override;
 
     public:
         DAGNetwork(size_t nInputs,
@@ -33,5 +34,9 @@ namespace SimpleNets
         nn_num_t Output() override;
 
         void PrintPOSTNumbers();
+
+        size_t AddNeuron(neuronTypes t);
+
+        size_t AddInput();
     };
 } // namespace SimpleNets

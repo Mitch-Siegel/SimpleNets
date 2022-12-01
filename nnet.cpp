@@ -139,6 +139,23 @@ namespace SimpleNets
         }
     }
 
+    void NeuralNet::SetInput(size_t index, const std::vector<nn_num_t> &values)
+    {
+        // - 1 to account for bias neuron
+        if (values.size() + index > this->layers[0].size() - 1)
+        {
+            printf("Error setting input for neural network!\n"
+                   "Expected %lu input values, received vector of size %lu\n",
+                   this->layers[0].size() - 1, values.size());
+        }
+        for (size_t i = 0; i < values.size(); i++)
+        {
+            // offset by 1 to skip over bias neuron at index 0
+            Units::Input *input = static_cast<Units::Input *>(*(this->layers[0].begin() + 1 + i + index));
+            input->SetValue(values[i]);
+        }
+    }
+
     // return false if no error, true if valid request but error, or bail the program if from and/or to are nonexistent
     // error condition determined by specific net implementations in the OnConnectionAdded function
     bool NeuralNet::AddConnection(Unit *from, Unit *to, nn_num_t w)

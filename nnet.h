@@ -59,8 +59,11 @@ namespace SimpleNets
         // print the network layers, units, and connections
         void Dump();
 
-        // sets the input neuron values by index to the values provided
+        // sets all input neuron values by index to the values provided
         void SetInput(const std::vector<nn_num_t> &values);
+
+        // sets a subset of the inputs starting at the provided index, with the number of values provided going to subsequent indices
+        void SetInput(size_t index, const std::vector<nn_num_t> &values);
 
         // add a connection from a given ID to a given ID with the given weight
         bool AddConnection(Unit *from, Unit *to, nn_num_t w);

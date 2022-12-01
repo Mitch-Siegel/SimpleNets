@@ -1,6 +1,7 @@
+#include <queue>
+#include <stack>
+
 #include "dagnn.h"
-#include "queue"
-#include "stack"
 
 namespace SimpleNets
 {
@@ -126,57 +127,14 @@ namespace SimpleNets
         }
     }
 
-    /*
-    bool DAGNetwork::CheckForCycle()
-    {
-        std::stack<Unit *> exploreStack;
-        // std::map<Unit *, bool> visited;
-        // std::map<
-        std::set<Unit *> visited;
-        std::set<Unit *> parent;
-        // std::vector<bool> visited(this->units().size(), false);
-        // std::vector<bool> parent(this->units().size(), false);
-
-        while (exploreStack.size() > 0)
-        {
-            Unit *j = exploreStack.top();
-            visited.insert(j);
-            bool needPop = true;
-
-            for (auto c : j->InboundConnections())
-            {
-                Unit *i = c->from;
-                if (visited.count(i) && parent.count(i))
-                {
-                    return true;
-                }
-                else if (!needPop)
-                {
-                    exploreStack.push(i);
-                    needPop = false;
-                }
-            }
-
-            if (needPop)
-            {
-                parent.erase(j);
-                exploreStack.pop();
-            }
-        }
-
-        return false;
-    }
-    */
     bool DAGNetwork::OnConnectionAdded(Connection *c)
     {
         std::stack<Unit *> exploreStack;
-        std::set<Unit *> visited;
         exploreStack.push(c->from);
         bool seenStartingUnit = false;
         while (exploreStack.size() > 0)
         {
             Unit *u = exploreStack.top();
-            // if (visited.count(u))
             if (u == c->from)
             {
                 if (seenStartingUnit)
@@ -190,9 +148,9 @@ namespace SimpleNets
                 }
             }
             exploreStack.pop();
-            for (auto c : u->OutboundConnections())
+            for (auto connection : u->OutboundConnections())
             {
-                exploreStack.push(c->to);
+                exploreStack.push(connection->to);
             }
         }
 
@@ -304,5 +262,19 @@ namespace SimpleNets
         {
             printf("POST %lu: Unit %lu\n", p.first, p.second->Id());
         }
+    }
+
+    size_t DAGNetwork::AddNeuron(neuronTypes t)
+    {
+        Unit *u = this->GenerateUnitFromType(t);
+        this->layers[1].AddUnit(u);
+        return u->Id();
+    }
+
+    size_t DAGNetwork::AddInput()
+    {
+        Unit *u = this->GenerateUnitFromType(input);
+        this->layers[0].AddUnit(u);
+        return u->Id();
     }
 } // namespace SimpleNets

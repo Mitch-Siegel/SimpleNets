@@ -14,10 +14,11 @@ void testFeedForwardNet()
         needMoreTraining = false;
         for (int a = 0; a < 2; a++)
         {
+            n.SetInput(0, {static_cast<nn_num_t>(a)});
             for (int b = 0; b < 2; b++)
             {
-                n.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
-                bool result = a & !b;
+                n.SetInput(1, {static_cast<nn_num_t>(b)});
+                bool result = a & b;
                 printf("Input %d,%d: output %f - expected %d - %s\n",
                        a, b,
                        n.Output(), result,
@@ -34,7 +35,7 @@ void testFeedForwardNet()
         for (int b = 0; b < 2; b++)
         {
             n.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
-            bool result = a & !b;
+            bool result = a & b;
 
             printf("Input %d,%d: output %f - expected %d - %s\n",
                    a, b,
@@ -52,9 +53,6 @@ void testDAGNet()
     n.AddConnection(0, 3, 0.1);
     n.AddConnection(1, 3, 0.1);
     n.AddConnection(2, 3, 0.1);
-    n.Dump();
-    n.PrintPOSTNumbers();
-    
     bool needMoreTraining = true;
     size_t i = 0;
     while (needMoreTraining)
@@ -66,7 +64,7 @@ void testDAGNet()
             for (int b = 0; b < 2; b++)
             {
                 n.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
-                nn_num_t result = static_cast<nn_num_t>(a & !b);
+                nn_num_t result = static_cast<nn_num_t>(a & b);
                 nn_num_t output = n.Output();
                 printf("Input %d,%d: output %lf - expected %lf - %s\n",
                        a, b,
@@ -88,7 +86,7 @@ void testDAGNet()
         for (int b = 0; b < 2; b++)
         {
             n.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
-            nn_num_t result = static_cast<nn_num_t>(a & !b);
+            nn_num_t result = static_cast<nn_num_t>(a & b);
             nn_num_t output = n.Output();
             printf("Input %d,%d: output %f - expected %f - %s\n",
                    a, b,
@@ -96,17 +94,11 @@ void testDAGNet()
                    (result == output) ? "[PASS]" : "[FAIL]");
         }
     }
-    printf("\n\n");
-    n.Dump();
-    
-
 }
 
 int main()
 {
-    testFeedForwardNet();
-    testFeedForwardNet();
-    testDAGNet();
+    // testFeedForwardNet();
     testDAGNet();
     return 0;
 }

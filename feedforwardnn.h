@@ -11,8 +11,8 @@ namespace SimpleNets
         void UpdateWeights(nn_num_t learningRate);
         void ForwardPropagate();
 
-        bool OnConnectionAdded(Connection *c);
-        bool OnConnectionRemoved(Connection *c);
+        bool OnConnectionAdded(Connection *c) override;
+        bool OnConnectionRemoved(Connection *c) override;
 
     public:
         FeedForwardNeuralNet(size_t nInputs,
