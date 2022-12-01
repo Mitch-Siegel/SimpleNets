@@ -25,7 +25,8 @@ namespace SimpleNets
         DAGNetwork(size_t nInputs,
                    std::vector<std::pair<neuronTypes, size_t>> hiddenNeurons,
                    std::pair<size_t, neuronTypes> outputFormat);
-        ~DAGNetwork();
+        DAGNetwork(const DAGNetwork &n) = default;
+        ~DAGNetwork() = default;
 
         // void AddLayer(size_t size, enum neuronTypes t);
 

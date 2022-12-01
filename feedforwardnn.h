@@ -18,7 +18,9 @@ namespace SimpleNets
         FeedForwardNeuralNet(size_t nInputs,
                              std::vector<std::pair<size_t, neuronTypes>> hiddenLayers,
                              std::pair<size_t, neuronTypes> outputFormat);
-        ~FeedForwardNeuralNet();
+                             
+        FeedForwardNeuralNet(const FeedForwardNeuralNet &n) = default;
+        ~FeedForwardNeuralNet() = default;
 
         void AddLayer(size_t size, enum neuronTypes t);
 

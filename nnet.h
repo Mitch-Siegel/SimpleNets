@@ -41,7 +41,7 @@ namespace SimpleNets
     public:
         NeuralNet();
         NeuralNet(const NeuralNet &n);
-        ~NeuralNet();
+        virtual ~NeuralNet();
 
         // return the pointer to a given layer by index
         Layer &operator[](int index);

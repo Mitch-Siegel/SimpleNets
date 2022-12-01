@@ -50,10 +50,6 @@ namespace SimpleNets
         this->layers.push_back(ol);
     }
 
-    DAGNetwork::~DAGNetwork()
-    {
-    }
-
     void DAGNetwork::Recalculate()
     {
         std::set<Unit *> touched;

@@ -49,10 +49,10 @@ void testFeedForwardNet()
 
 void testDAGNet()
 {
-    SimpleNets::DAGNetwork n(2, {}, {1, SimpleNets::perceptron});
-    n.AddConnection(0, 3, 0.1);
-    n.AddConnection(1, 3, 0.1);
-    n.AddConnection(2, 3, 0.1);
+    SimpleNets::DAGNetwork *n = new SimpleNets::DAGNetwork(2, {}, {1, SimpleNets::perceptron});
+    n->AddConnection(0, 3, 0.1);
+    n->AddConnection(1, 3, 0.1);
+    n->AddConnection(2, 3, 0.1);
     bool needMoreTraining = true;
     size_t i = 0;
     while (needMoreTraining)
@@ -63,15 +63,15 @@ void testDAGNet()
         {
             for (int b = 0; b < 2; b++)
             {
-                n.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
+                n->SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
                 nn_num_t result = static_cast<nn_num_t>(a & b);
-                nn_num_t output = n.Output();
+                nn_num_t output = n->Output();
                 printf("Input %d,%d: output %lf - expected %lf - %s\n",
                        a, b,
                        output, result,
                        (result == output) ? "[PASS]" : "[FAIL]");
                 needMoreTraining |= (result != output);
-                n.Learn({result}, 1.0);
+                n->Learn({result}, 1.0);
             }
         }
         if (needMoreTraining)
@@ -85,9 +85,9 @@ void testDAGNet()
     {
         for (int b = 0; b < 2; b++)
         {
-            n.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
+            n->SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
             nn_num_t result = static_cast<nn_num_t>(a & b);
-            nn_num_t output = n.Output();
+            nn_num_t output = n->Output();
             printf("Input %d,%d: output %f - expected %f - %s\n",
                    a, b,
                    output, result,
@@ -96,20 +96,23 @@ void testDAGNet()
     }
 
     printf("\n\nTesting Copy Constructor:\n");
-    SimpleNets::DAGNetwork secondN = n;
+    SimpleNets::DAGNetwork *secondN = new SimpleNets::DAGNetwork(*n);
     for (int a = 0; a < 2; a++)
     {
         for (int b = 0; b < 2; b++)
         {
-            secondN.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
+            secondN->SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
             nn_num_t result = static_cast<nn_num_t>(a & b);
-            nn_num_t output = secondN.Output();
+            nn_num_t output = secondN->Output();
             printf("Input %d,%d: output %f - expected %f - %s\n",
                    a, b,
                    output, result,
                    (result == output) ? "[PASS]" : "[FAIL]");
         }
     }
+    secondN->Dump();
+    delete n;
+    delete secondN;
 }
 
 int main()

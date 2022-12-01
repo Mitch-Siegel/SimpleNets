@@ -40,10 +40,6 @@ namespace SimpleNets
         this->finalized = true;
     }
 
-    FeedForwardNeuralNet::~FeedForwardNeuralNet()
-    {
-    }
-
     void FeedForwardNeuralNet::Learn(const std::vector<nn_num_t> &expectedOutput, nn_num_t learningRate)
     {
         if (expectedOutput.size() != this->layers.back().size())
