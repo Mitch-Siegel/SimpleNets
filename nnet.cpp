@@ -5,6 +5,40 @@
 namespace SimpleNets
 {
     // Neural Net base
+    NeuralNet::NeuralNet()
+    {
+    }
+
+    NeuralNet::NeuralNet(const NeuralNet &n)
+    {
+
+        for (auto u : n.units_)
+        {
+            this->GenerateUnitFromType(u.second->type(), u.first);
+        }
+
+        for (Layer l : n.layers)
+        {
+            Layer newL = Layer(this, false);
+            for(auto u = l.begin(); u != l.end(); ++u)
+            {
+                newL.AddUnit(this->units_[(*u)->Id()]);
+            }
+            this->layers.push_back(newL);
+            
+        }
+
+        for (auto c : n.connections_)
+        {
+            Unit *from = this->units_[c.first.first];
+            Unit *to = this->units_[c.first.second];
+            Connection *newC = new Connection(from, to, c.second->weight);
+            this->connections_[{from->Id(), to->Id()}] = newC;
+            from->AddConnection(newC);
+            to->AddConnection(newC);
+        }
+    }
+
     NeuralNet::~NeuralNet()
     {
         for (auto c : this->connections_)
@@ -16,8 +50,6 @@ namespace SimpleNets
         {
             delete u.second;
         }
-
-        
     }
 
     size_t NeuralNet::AcquireNewUnitID()

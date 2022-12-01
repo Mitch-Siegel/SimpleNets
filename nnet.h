@@ -39,7 +39,8 @@ namespace SimpleNets
         void RemoveConnection(Connection *c);
 
     public:
-
+        NeuralNet();
+        NeuralNet(const NeuralNet &n);
         ~NeuralNet();
 
         // return the pointer to a given layer by index

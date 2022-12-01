@@ -94,6 +94,22 @@ void testDAGNet()
                    (result == output) ? "[PASS]" : "[FAIL]");
         }
     }
+
+    printf("\n\nTesting Copy Constructor:\n");
+    SimpleNets::DAGNetwork secondN = n;
+    for (int a = 0; a < 2; a++)
+    {
+        for (int b = 0; b < 2; b++)
+        {
+            secondN.SetInput({static_cast<nn_num_t>(a), static_cast<nn_num_t>(b)});
+            nn_num_t result = static_cast<nn_num_t>(a & b);
+            nn_num_t output = secondN.Output();
+            printf("Input %d,%d: output %f - expected %f - %s\n",
+                   a, b,
+                   output, result,
+                   (result == output) ? "[PASS]" : "[FAIL]");
+        }
+    }
 }
 
 int main()
