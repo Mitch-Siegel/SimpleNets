@@ -308,6 +308,16 @@ namespace SimpleNets
         return this->connections_[{fromId, toId}]->weight;
     }
 
+    void NeuralNet::ChangeWeight(size_t fromId, size_t toId, nn_num_t delta)
+    {
+        if (this->connections_.count({fromId, toId}) == 0)
+        {
+            printf("Error changing connection weight from %lu->%lu - connection doesn't exist!\n", fromId, toId);
+            exit(1);
+        }
+        this->connections_[{fromId, toId}]->weight += delta;
+    }
+
     /*
     void NeuralNet::ChangeWeight(std::pair<size_t, size_t> from, std::pair<size_t, size_t> to, nn_num_t delta)
     {
