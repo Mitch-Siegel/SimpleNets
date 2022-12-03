@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdio.h>
+#include <algorithm>
 
 #include "nnet.h"
 namespace SimpleNets
@@ -20,12 +21,11 @@ namespace SimpleNets
         for (Layer l : n.layers)
         {
             Layer newL = Layer(this, false);
-            for(auto u = l.begin(); u != l.end(); ++u)
+            for (auto u = l.begin(); u != l.end(); ++u)
             {
                 newL.AddUnit(this->units_[(*u)->Id()]);
             }
             this->layers.push_back(newL);
-            
         }
 
         for (auto c : n.connections_)
@@ -262,6 +262,30 @@ namespace SimpleNets
         c->from->RemoveConnection(c);
         c->to->RemoveConnection(c);
         delete c;
+    }
+
+    void NeuralNet::RemoveUnit(size_t id)
+    {
+        Unit *u = this->units_[id];
+        for (Layer &l : this->layers)
+        {
+            std::vector<Unit *>::iterator toErase;
+            if ((toErase = std::find(l.begin(), l.end(), u)) != l.end())
+            {
+                l.erase(toErase);
+                break;
+            }
+        }
+        for (auto oc : u->OutboundConnections())
+        {
+            this->RemoveConnection(oc);
+        }
+        for (auto ic : u->InboundConnections())
+        {
+            this->RemoveConnection(ic);
+        }
+        this->units_.erase(id);
+        delete u;
     }
 
     const nn_num_t NeuralNet::GetWeight(size_t fromId, size_t toId)

@@ -50,6 +50,7 @@ void testFeedForwardNet()
 void testDAGNet()
 {
     SimpleNets::DAGNetwork *n = new SimpleNets::DAGNetwork(2, {}, {1, SimpleNets::perceptron});
+    size_t toRemove = n->AddNeuron(SimpleNets::perceptron);
     n->AddConnection(0, 3, 0.1);
     n->AddConnection(1, 3, 0.1);
     n->AddConnection(2, 3, 0.1);
@@ -110,6 +111,7 @@ void testDAGNet()
                    (result == output) ? "[PASS]" : "[FAIL]");
         }
     }
+    secondN->RemoveHiddenNeuron(toRemove);
     secondN->Dump();
     delete n;
     delete secondN;

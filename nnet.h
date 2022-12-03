@@ -78,6 +78,8 @@ namespace SimpleNets
         // remove the connection from a given ID to a given ID
         bool RemoveConnection(size_t fromId, size_t toId);
 
+        // remove the unit with the given ID (and all its connections)
+        void RemoveUnit(size_t id);
         
         // get the weight of a connection from a given ID to a given ID
         const nn_num_t GetWeight(size_t fromId, size_t toId);
@@ -88,9 +90,6 @@ namespace SimpleNets
         // set the weight of a connection from a given ID to a given ID to a value
         void SetWeight(size_t fromId, size_t toId, nn_num_t w);
 
-
-        // void AddNeuron(size_t layer, neuronTypes t);
-        // void RemoveNeuron(std::pair<size_t, size_t> index);
     };
 } // namespace SimpleNets
 
