@@ -206,7 +206,6 @@ namespace SimpleNets
         if (result)
         {
             this->RemoveConnection(c);
-            delete c;
         }
         return result;
     }
