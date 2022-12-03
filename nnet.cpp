@@ -276,11 +276,14 @@ namespace SimpleNets
                 break;
             }
         }
-        for (auto oc : u->OutboundConnections())
+        auto outbound = u->OutboundConnections();
+        for (auto oc : outbound)
         {
             this->RemoveConnection(oc);
         }
-        for (auto ic : u->InboundConnections())
+
+        auto inbound = u->InboundConnections();
+        for (auto ic : inbound)
         {
             this->RemoveConnection(ic);
         }
