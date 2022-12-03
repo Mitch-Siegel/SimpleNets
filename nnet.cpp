@@ -117,6 +117,11 @@ namespace SimpleNets
         return this->units_;
     }
 
+    const std::map<std::pair<size_t, size_t>, Connection *> &NeuralNet::connections()
+    {
+        return this->connections_;
+    }
+
     Layer &NeuralNet::operator[](int index)
     {
         return this->layers[index];
