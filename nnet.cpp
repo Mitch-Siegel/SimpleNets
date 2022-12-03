@@ -201,7 +201,14 @@ namespace SimpleNets
         this->connections_[{from->Id(), to->Id()}] = c;
         from->AddConnection(c);
         to->AddConnection(c);
-        return this->OnConnectionAdded(c);
+
+        bool result = this->OnConnectionAdded(c);
+        if (result)
+        {
+            this->RemoveConnection(c);
+            delete c;
+        }
+        return result;
     }
 
     // return false if no error, true if valid request but error, or bail the program if from and/or to are nonexistent
