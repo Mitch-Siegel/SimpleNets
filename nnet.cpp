@@ -242,7 +242,7 @@ namespace SimpleNets
         from->RemoveConnection(c);
         to->RemoveConnection(c);
         bool retval = this->OnConnectionRemoved(c);
-        if (!retval)
+        if (retval)
         {
             delete c;
         }
