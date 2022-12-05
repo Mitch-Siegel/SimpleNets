@@ -101,7 +101,7 @@ namespace SimpleNets
         while (exploreStack.size() > 0)
         {
             Unit *j = exploreStack.top();
-            postNumbers_[post++] = j;
+            postNumbers_[post++] = j->Id();
             exploreStack.pop();
             visited.insert(j);
 
@@ -248,11 +248,11 @@ namespace SimpleNets
         printf("POST numbers for DAGNetwork:\n");
         for (auto p : this->postNumbers_)
         {
-            printf("POST %lu: Unit %lu\n", p.first, p.second->Id());
+            printf("POST %lu: Unit %lu\n", p.first, p.second);
         }
     }
 
-    const std::map<size_t, Unit *> &DAGNetwork::PostNumbers()
+    const std::map<size_t, size_t> &DAGNetwork::PostNumbers()
     {
         return this->postNumbers_;
     }
