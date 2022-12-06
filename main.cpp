@@ -117,9 +117,17 @@ void testDAGNet()
     delete secondN;
 }
 
+void testDAGMemoryLeak()
+{
+    SimpleNets::DAGNetwork n(1, {}, {1, SimpleNets::logistic});
+    n.AddConnection(1, 2, 0.5);
+    n.AddConnection(1, 2, 0.5);
+}
+
 int main()
 {
     // testFeedForwardNet();
-    testDAGNet();
+    // testDAGNet();
+    testDAGMemoryLeak();
     return 0;
 }
